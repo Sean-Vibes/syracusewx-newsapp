@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syracuse Weather - Live View</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .video-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .video-background video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .gif-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-image: url('https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExeDdra200dG45YW9qYTNyaHE0ZjNrZDR0and2OWF1NGs2ajM5enRnMiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/m2hjlbNbSRGy4/giphy.gif');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            display: none;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.1) 100%);
+            z-index: 1;
+        }
+
+        .weather-container {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            padding: 20px;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .weather-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 100%;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .location {
+            font-size: 2.5rem;
+            font-weight: 300;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #fff 0%, #f0f0f0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .current-temp {
+            font-size: 5rem;
+            font-weight: 100;
+            margin: 20px 0;
+            line-height: 1;
+        }
+
+        .weather-description {
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+            opacity: 0.9;
+            text-transform: capitalize;
+        }
+
+        .weather-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .detail-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: transform 0.3s ease, background 0.3s ease;
+        }
+
+        .detail-item:hover {
+            transform: translateY(-3px);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .detail-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 8px;
+        }
+
+        .detail-value {
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
+        .last-updated {
+            position: absolute;
+            bottom: 80px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .news-ticker {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.9) 0%, rgba(20, 20, 20, 0.95) 100%);
+            backdrop-filter: blur(15px);
+            border-top: 2px solid rgba(255, 255, 255, 0.1);
+            z-index: 10;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+        }
+
+        .news-label {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            color: white;
+            padding: 0 20px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+            font-size: 1.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            min-width: 120px;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .news-content {
+            flex: 1;
+            height: 100%;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .news-scroll {
+            display: flex;
+            align-items: center;
+            height: 100%;
+            animation: scroll-left 120s linear infinite;
+            white-space: nowrap;
+        }
+
+        @keyframes scroll-left {
+            0% {
+                transform: translateX(100%);
+            }
+            100% {
+                transform: translateX(-100%);
+            }
+        }
+
+        .news-item {
+            color: white;
+            font-size: 1.8rem;
+            margin-right: 60px;
+            display: inline-flex;
+            align-items: center;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+        }
+
+        .news-item::before {
+            content: "●";
+            color: #ff6b6b;
+            margin-right: 12px;
+            font-size: 1.2rem;
+        }
+
+        .news-loading {
+            color: white;
+            font-size: 1.8rem;
+            padding: 0 20px;
+            opacity: 0.7;
+        }
+
+        .loading {
+            font-size: 1.5rem;
+            opacity: 0.8;
+        }
+
+        .error {
+            color: #ff6b6b;
+            font-size: 1.2rem;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .weather-card {
+                padding: 30px 20px;
+                margin: 20px;
+            }
+            
+            .location {
+                font-size: 2rem;
+            }
+            
+            .current-temp {
+                font-size: 4rem;
+            }
+            
+            .weather-details {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="video-background">
+        <video id="liveVideo" autoplay muted loop playsinline>
+            <source src="" type="application/x-mpegURL">
+            Your browser does not support the video tag.
+        </video>
+    </div>
+    
+    <div class="gif-background" id="gifBackground"></div>
+    
+    <div class="overlay"></div>
+    
+    <div class="weather-container">
+        <div class="weather-card" id="weatherCard">
+            <div class="loading" id="loading">Loading weather data...</div>
+        </div>
+    </div>
+    
+    <div class="last-updated" id="lastUpdated"></div>
+    
+    <div class="news-ticker">
+        <div class="news-label" id="newsLabel">00:00</div>
+        <div class="news-content">
+            <div class="news-scroll" id="newsScroll">
+                <div class="news-loading">Loading latest news...</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.15/hls.min.js"></script>
+    <script>
+        const API_KEY = '1cf8937cc9682ba717da9c52c975283e';
+        const CITY = 'Syracuse';
+        const STATE = 'NY';
+        const STREAM_URL = 'https://tower.armorycam.com/stream/armorystream.m3u8';
+        const FALLBACK_GIF = 'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExeDdra200dG45YW9qYTNyaHE0ZjNrZDR0and2OWF1NGs2ajM5enRnMiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/m2hjlbNbSRGy4/giphy.gif';
+        
+        let weatherData = {};
+        let newsData = [];
+        let videoLoadTimeout;
+        let videoLoaded = false;
+
+        // Initialize HLS video stream
+        function initializeVideoStream() {
+            const video = document.getElementById('liveVideo');
+            
+            // Set timeout to show GIF fallback after 5 seconds
+            videoLoadTimeout = setTimeout(() => {
+                if (!videoLoaded) {
+                    console.log('Video failed to load within 5 seconds, showing GIF fallback');
+                    showGifFallback();
+                }
+            }, 5000);
+            
+            if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+                const hls = new Hls({
+                    enableWorker: true,
+                    lowLatencyMode: true,
+                    backBufferLength: 90
+                });
+                
+                hls.loadSource(STREAM_URL);
+                hls.attachMedia(video);
+                
+                hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                    video.play().then(() => {
+                        videoLoaded = true;
+                        clearTimeout(videoLoadTimeout);
+                        console.log('Video loaded successfully');
+                    }).catch(e => {
+                        console.log('Video autoplay failed:', e);
+                        showGifFallback();
+                    });
+                });
+                
+                hls.on(Hls.Events.ERROR, function(event, data) {
+                    console.error('HLS Error:', data);
+                    if (data.fatal) {
+                        clearTimeout(videoLoadTimeout);
+                        showGifFallback();
+                    }
+                });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                // Safari native HLS support
+                video.src = STREAM_URL;
+                video.addEventListener('loadedmetadata', function() {
+                    video.play().then(() => {
+                        videoLoaded = true;
+                        clearTimeout(videoLoadTimeout);
+                        console.log('Video loaded successfully (Safari)');
+                    }).catch(e => {
+                        console.log('Video autoplay failed (Safari):', e);
+                        showGifFallback();
+                    });
+                });
+                
+                video.addEventListener('error', function() {
+                    console.error('Video error, showing GIF fallback');
+                    clearTimeout(videoLoadTimeout);
+                    showGifFallback();
+                });
+            } else {
+                console.error('HLS is not supported in this browser, showing GIF fallback');
+                clearTimeout(videoLoadTimeout);
+                showGifFallback();
+            }
+        }
+
+        // Show GIF fallback when video fails
+        function showGifFallback() {
+            const video = document.getElementById('liveVideo');
+            const gifBackground = document.getElementById('gifBackground');
+            
+            video.style.display = 'none';
+            gifBackground.style.display = 'block';
+            console.log('Switched to GIF background fallback');
+        }
+
+        // Fetch news data using public RSS feeds
+        async function fetchNewsData() {
+            console.log('Fetching news data...');
+            try {
+                const rssFeeds = [
+                    'https://rss.cnn.com/rss/edition.rss',
+                    'https://feeds.nbcnews.com/nbcnews/public/news',
+                    'https://feeds.reuters.com/reuters/topNews'
+                ];
+                
+                let allArticles = [];
+                
+                // Try each RSS feed
+                for (const rssUrl of rssFeeds) {
+                    try {
+                        const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
+                        const response = await fetch(apiUrl);
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            
+                            if (data.status === 'ok' && data.items && data.items.length > 0) {
+                                const articles = data.items.slice(0, 6).map(item => ({
+                                    title: item.title ? item.title.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>') : 'News Update',
+                                    source: { name: data.feed ? data.feed.title : 'News' }
+                                }));
+                                allArticles = allArticles.concat(articles);
+                            }
+                        }
+                    } catch (error) {
+                        console.log('Error with RSS feed:', rssUrl, error);
+                    }
+                }
+                
+                if (allArticles.length > 0) {
+                    newsData = allArticles.sort(() => 0.5 - Math.random()).slice(0, 15);
+                    displayNewsData(newsData);
+                } else {
+                    throw new Error('No articles fetched from RSS feeds');
+                }
+                
+            } catch (error) {
+                console.error('Error fetching news data:', error);
+                displayFallbackNews();
+            }
+        }
+
+        // Display news in ticker
+        function displayNewsData(articles) {
+            const newsScroll = document.getElementById('newsScroll');
+            
+            if (articles.length === 0) {
+                displayFallbackNews();
+                return;
+            }
+            
+            const newsItems = articles.map(article => {
+                const title = article.title || 'News Update';
+                const source = article.source ? article.source.name : 'News Source';
+                return `<div class="news-item">${title} - ${source}</div>`;
+            }).join('');
+            
+            newsScroll.innerHTML = newsItems;
+            
+            // Restart animation
+            newsScroll.style.animation = 'none';
+            newsScroll.offsetHeight; // Trigger reflow
+            newsScroll.style.animation = 'scroll-left 120s linear infinite';
+        }
+
+        // Fallback news if API fails
+        function displayFallbackNews() {
+            const fallbackNews = [
+                { title: "Markets show mixed signals amid global economic uncertainty", source: "Financial News" },
+                { title: "Climate summit addresses urgent environmental challenges", source: "Environmental Report" },
+                { title: "NFL playoffs heat up with unexpected upsets", source: "Sports Network" },
+                { title: "NBA trade deadline approaches with major moves expected", source: "Sports Center" },
+                { title: "Hollywood awards season kicks off with major nominations", source: "Entertainment Weekly" },
+                { title: "Streaming services announce new original content lineup", source: "Media Watch" },
+                { title: "Technology sector continues rapid innovation and growth", source: "Tech News" },
+                { title: "Championship game draws record television viewership", source: "Sports Analytics" },
+                { title: "Music industry celebrates breakthrough artists and albums", source: "Music Today" },
+                { title: "International relations evolve with diplomatic initiatives", source: "World Report" }
+            ];
+            
+            const newsItems = fallbackNews.map(item => 
+                `<div class="news-item">${item.title} - ${item.source}</div>`
+            ).join('');
+            
+            const newsScroll = document.getElementById('newsScroll');
+            newsScroll.innerHTML = newsItems;
+            
+            // Restart animation
+            newsScroll.style.animation = 'none';
+            newsScroll.offsetHeight; // Trigger reflow
+            newsScroll.style.animation = 'scroll-left 120s linear infinite';
+        }
+
+        async function fetchWeatherData() {
+            try {
+                const response = await fetch(
+                    `https://api.openweathermap.org/data/2.5/weather?q=${CITY},${STATE},US&appid=${API_KEY}&units=imperial`
+                );
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                weatherData = data;
+                displayWeatherData(data);
+                updateLastUpdated();
+                
+            } catch (error) {
+                console.error('Error fetching weather data:', error);
+                displayError('Unable to load weather data. Please try again later.');
+            }
+        }
+
+        // Display weather data
+        function displayWeatherData(data) {
+            const weatherCard = document.getElementById('weatherCard');
+            const temp = Math.round(data.main.temp);
+            const feelsLike = Math.round(data.main.feels_like);
+            const humidity = data.main.humidity;
+            const windSpeed = Math.round(data.wind.speed);
+            const windDirection = getWindDirection(data.wind.deg);
+            const pressure = Math.round(data.main.pressure * 0.02953); // Convert to inHg
+            
+            weatherCard.innerHTML = `
+                <div class="location">${data.name}, NY</div>
+                <div class="current-temp">${temp}°F</div>
+                <div class="weather-description">${data.weather[0].description}</div>
+                
+                <div class="weather-details">
+                    <div class="detail-item">
+                        <div class="detail-label">Feels Like</div>
+                        <div class="detail-value">${feelsLike}°F</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Humidity</div>
+                        <div class="detail-value">${humidity}%</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Wind</div>
+                        <div class="detail-value">${windSpeed} mph ${windDirection}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Pressure</div>
+                        <div class="detail-value">${pressure} inHg</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Display error message
+        function displayError(message) {
+            const weatherCard = document.getElementById('weatherCard');
+            weatherCard.innerHTML = `<div class="error">${message}</div>`;
+        }
+
+        // Get wind direction from degrees
+        function getWindDirection(degrees) {
+            const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+            return directions[Math.round(degrees / 22.5) % 16];
+        }
+
+        // Update current time in news label
+        function updateTimeLabel() {
+            const newsLabel = document.getElementById('newsLabel');
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', { 
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false 
+            });
+            newsLabel.textContent = timeString;
+        }
+
+        // Update last updated timestamp
+        function updateLastUpdated() {
+            const lastUpdated = document.getElementById('lastUpdated');
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', { 
+                hour: 'numeric', 
+                minute: '2-digit',
+                hour12: true 
+            });
+            lastUpdated.textContent = `Updated: ${timeString}`;
+        }
+
+        // Initialize the application
+        function initialize() {
+            initializeVideoStream();
+            fetchWeatherData();
+            fetchNewsData();
+            updateTimeLabel();
+            
+            // Update weather data every 10 minutes
+            setInterval(fetchWeatherData, 600000);
+            
+            // Update news data every 15 minutes
+            setInterval(fetchNewsData, 900000);
+            
+            // Update time every second
+            setInterval(updateTimeLabel, 1000);
+        }
+
+        // Start the application when page loads
+        document.addEventListener('DOMContentLoaded', initialize);
+        
+        // Handle page visibility changes to restart video if needed
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                const video = document.getElementById('liveVideo');
+                if (video.paused) {
+                    video.play().catch(e => console.log('Video restart failed:', e));
+                }
+            }
+        });
+    </script>
+</body>
+</html>
