@@ -29,12 +29,24 @@
             transition: transform 1s ease-in-out; /* Added transition for sliding */
         }
 
-        .video-background video {
+        .video-background .media-container {
             width: 100%;
             height: 100%;
-            object-fit: cover;
-            display: block; /* Ensure video takes up space */
+            position: relative; /* Ensure children are positioned relative to this */
+            overflow: hidden;
         }
+
+        .video-background .media-container video,
+        .video-background .media-container iframe {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Ensures video/iframe covers the entire container */
+            display: block; /* Remove extra space below inline elements */
+            position: absolute; /* Allows object-fit to work reliably with position */
+            top: 0;
+            left: 0;
+        }
+
 
         .gif-background {
             position: fixed;
@@ -43,7 +55,7 @@
             width: 100%;
             height: 100%;
             z-index: -2; /* Lower z-index for GIF so videos can cover it */
-            background-image: url('https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExeDdra200dG45YW9qYTN5YW9qYTNyaHE0ZjNrZDR0and2OWF1NGs2ajM5enRnMiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/m2hjlbNbSRGy4/giphy.gif');
+            background-image: url('https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExeDdra200dG45YW9qYTN5YW9qYTNyaHE0ZjNrZDR0and2OWF1NGs2ajM5enRnMiZlcD12MV9pbnRlcm5sYWZfYnlfaWQmY3Q9Zw/m2hjlbNbSRGy4/giphy.gif');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -112,7 +124,12 @@
             backdrop-filter: blur(20px);
             border-radius: 20px;
             padding: 40px;
-            text-align: center;
+            /* Added flex properties to center content reliably within the card */
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* This will center all direct children horizontally */
+            
+            text-align: center; /* Keep for general text alignment for non-flex children or inline content */
             border: 1px solid rgba(255, 255, 255, 0.2);
             box-shadow: 0 8px 32px rgba(0,0,0,0.3);
             max-width: 500px;
@@ -146,20 +163,20 @@
         .current-temp {
             font-size: 6rem;
             font-weight: 100;
-            margin: 20px 0;
+            margin: 10px 0; /* Tightened spacing */
             line-height: 1;
         }
 
         .time-date {
             font-size: 1.6rem;
-            margin-bottom: 20px;
+            margin-bottom: 10px; /* Tightened spacing */
             opacity: 0.9;
             font-weight: 500;
         }
 
         .weather-description {
             font-size: 1.8rem;
-            margin-bottom: 30px;
+            margin-bottom: 15px; /* Tightened spacing */
             opacity: 0.9;
             text-transform: capitalize;
             font-weight: 500;
@@ -169,12 +186,16 @@
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 15px;
-            margin-top: 30px;
+            margin-top: 15px; /* Tightened spacing */
             padding: 20px;
             background: rgba(255, 255, 255, 0.08);
             border-radius: 15px;
             border: 1px solid rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
+            /* Ensure grid itself is centered within its flex parent (.weather-card) */
+            justify-content: center; /* For grid, similar to align-items: center for flex column */
+            align-items: center; /* For grid, if items themselves need vertical alignment */
+            width: 100%; /* Important for centering if content is smaller than card */
         }
 
         .detail-item {
@@ -393,10 +414,14 @@
 <body>
     <!-- Two video backgrounds for seamless transitions -->
     <div class="video-background active-bg" id="videoBackground1">
-        <video autoplay muted loop playsinline></video>
+        <div class="media-container" id="mediaContainer1">
+            <!-- Video or iframe will be dynamically placed here -->
+        </div>
     </div>
     <div class="video-background inactive-bg" id="videoBackground2">
-        <video autoplay muted loop playsinline></video>
+        <div class="media-container" id="mediaContainer2">
+            <!-- Video or iframe will be dynamically placed here -->
+        </div>
     </div>
 
     <!-- Interstitial Image Background -->
@@ -438,34 +463,31 @@
                 stream: 'https://tower.armorycam.com/stream/armorystream.m3u8'
             },
             {
-                displayName: 'Columbia',
-                apiName: 'Columbia',
+                displayName: 'Myrtle Beach', 
+                apiName: 'Myrtle Beach',     
                 state: 'SC',
-                stream: 'https://s18.us-east-1.skyvdn.com/rtplive/10007/chunklist_w1775499449.m3u8'
+                stream: 'https://www.youtube.com/embed/MAPDh0XDtZs' // YouTube embed URL
             }
         ];
 
         let currentCityIndex = 0;
-        let activeVideoBackgroundId = 'videoBackground1'; // Initialize with the first active background
+        let activeVideoBackgroundId = 'videoBackground1'; 
 
-        // News API key (kept as is from previous code)
         const NEWS_API_KEY = '28da12c05d7d45efa1594b14339070c0';
-        // RSS API key (kept as is from previous code)
         const RSS_API_KEY = 'sJGWtKgYEYFB6VzT7FNgNYxhPxOGfbVhsP8JaKTd';
-        // Fallback GIF for video stream issues (kept as is)
         const FALLBACK_GIF = 'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExeDdra200dG45YW9qYTN5YW9qYTNyaHE0ZjNrZDR0and2OWF1NGs2ajM5enRnMiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/m2hjlbNbSRGy4/giphy.gif';
         
         let weatherData = {};
         let newsData = [];
         let videoLoadTimeout;
-        let hlsInstance = null; // Store HLS instance to destroy it when switching
-        let preLoadTimeoutId = null; // To store the timeout for pre-loading
+        let hlsInstance = null; 
+        let preLoadTimeoutId = null; 
 
         // Function to show GIF fallback, adapting for two video backgrounds
         function showGifFallback() {
             document.getElementById('videoBackground1').style.display = 'none';
             document.getElementById('videoBackground2').style.display = 'none';
-            document.getElementById('interstitialBackground').style.display = 'none'; // Ensure interstitial is hidden
+            document.getElementById('interstitialBackground').style.display = 'none'; 
             document.getElementById('gifBackground').style.display = 'block';
             console.log('Showing GIF fallback for ALL video backgrounds due to stream error.');
         }
@@ -473,87 +495,168 @@
         // Function to hide GIF fallback and show the active video background
         function hideGifFallback() {
             document.getElementById('gifBackground').style.display = 'none';
-            // Ensure the active video background is visible
             document.getElementById(activeVideoBackgroundId).style.display = 'block';
             console.log(`Hiding GIF fallback, showing active video: ${activeVideoBackgroundId}`);
         }
 
-        // Initialize HLS video stream for a specific video element
-        function loadVideo(videoElement, streamUrl) {
+        // Initialize video stream (or embed) for a specific video background div
+        function loadVideo(videoBackgroundDiv, streamUrl) {
             return new Promise((resolve) => {
                 clearTimeout(videoLoadTimeout); 
-                if (hlsInstance && hlsInstance.media === videoElement) {
-                    hlsInstance.destroy();
-                    hlsInstance = null;
-                }
-
-                videoElement.src = ''; 
-                videoElement.load(); 
+                const mediaContainer = videoBackgroundDiv.querySelector('.media-container');
+                mediaContainer.innerHTML = ''; 
 
                 let currentVideoLoadTimeout = setTimeout(() => {
-                    console.log(`Video load timeout for ${streamUrl}. Initiating GIF fallback.`);
+                    console.log(`Media load timeout for ${streamUrl}. Initiating GIF fallback.`);
                     showGifFallback();
                     resolve(false); 
-                }, 5000); 
+                }, 7000); 
 
-                if (Hls.isSupported()) {
-                    hlsInstance = new Hls({
-                        enableWorker: true,
-                        lowLatencyMode: true,
-                        backBufferLength: 90
-                    });
-                    hlsInstance.loadSource(streamUrl);
-                    hlsInstance.attachMedia(videoElement);
-                    hlsInstance.on(Hls.Events.MANIFEST_PARSED, function onManifestParsed() {
-                        console.log(`HLS manifest parsed for stream: ${streamUrl}`);
-                        videoElement.play().then(() => {
-                            clearTimeout(currentVideoLoadTimeout); 
-                            hideGifFallback(); 
-                            resolve(true); 
-                        }).catch(e => {
-                            console.error(`Video play failed for ${streamUrl} (likely browser autoplay policy):`, e);
-                            clearTimeout(currentVideoLoadTimeout); 
+                if (streamUrl.includes('youtube.com/embed/')) {
+                    // YouTube Embed
+                    const iframe = document.createElement('iframe');
+                    const videoId = streamUrl.split('/').pop().split('?')[0]; 
+                    iframe.src = `${streamUrl}?autoplay=1&mute=1&controls=0&loop=1&playlist=${videoId}`;
+                    iframe.title = 'Live Stream';
+                    iframe.frameborder = '0';
+                    iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+                    iframe.referrerPolicy = 'strict-origin-when-cross-origin';
+                    iframe.allowFullscreen = true;
+                    iframe.style.width = '100%';
+                    iframe.style.height = '100%';
+                    iframe.style.objectFit = 'cover'; 
+                    iframe.style.position = 'absolute'; 
+                    iframe.style.top = '0';
+                    iframe.style.left = '0';
+
+                    iframe.onload = () => {
+                        console.log(`YouTube iframe loaded for: ${streamUrl}`);
+                        clearTimeout(currentVideoLoadTimeout);
+                        hideGifFallback();
+                        resolve(true);
+                    };
+                    iframe.onerror = () => {
+                        console.error(`YouTube iframe failed to load for: ${streamUrl}`);
+                        clearTimeout(currentVideoLoadTimeout);
+                        showGifFallback();
+                        resolve(false);
+                    };
+                    mediaContainer.appendChild(iframe);
+
+                } else if (streamUrl.endsWith('.m3u8')) {
+                    // HLS Stream
+                    const videoElement = document.createElement('video');
+                    videoElement.autoplay = true;
+                    videoElement.muted = true;
+                    videoElement.loop = true;
+                    videoElement.playsInline = true;
+                    videoElement.style.width = '100%';
+                    videoElement.style.height = '100%';
+                    videoElement.style.objectFit = 'cover';
+
+                    mediaContainer.appendChild(videoElement);
+
+                    if (hlsInstance && hlsInstance.media === videoElement) {
+                        hlsInstance.destroy();
+                        hlsInstance = null;
+                    }
+                    
+                    if (Hls.isSupported()) {
+                        hlsInstance = new Hls({ enableWorker: true, lowLatencyMode: true, backBufferLength: 90 });
+                        hlsInstance.loadSource(streamUrl);
+                        hlsInstance.attachMedia(videoElement);
+                        hlsInstance.on(Hls.Events.MANIFEST_PARSED, function onManifestParsed() {
+                            console.log(`HLS manifest parsed for stream: ${streamUrl}`);
+                            videoElement.play().then(() => {
+                                clearTimeout(currentVideoLoadTimeout); 
+                                hideGifFallback(); 
+                                resolve(true); 
+                            }).catch(e => {
+                                console.error(`Video play failed for ${streamUrl} (browser autoplay policy):`, e);
+                                clearTimeout(currentVideoLoadTimeout); 
+                                showGifFallback(); 
+                                resolve(false);
+                            });
+                            hlsInstance.off(Hls.Events.MANIFEST_PARSED, onManifestParsed); 
+                        });
+                        hlsInstance.on(Hls.Events.ERROR, function onHlsError(event, data) {
+                            console.error(`Hls.js fatal error for ${streamUrl}:`, data.type, data.details);
+                            if (data.fatal) {
+                                clearTimeout(currentVideoLoadTimeout); 
+                                showGifFallback(); 
+                                hlsInstance.off(Hls.Events.ERROR, onHlsError); 
+                                resolve(false); 
+                            }
+                        });
+                    } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
+                        // Native HLS for Safari
+                        videoElement.src = streamUrl;
+                        videoElement.addEventListener('loadedmetadata', function onLoadedMetadata() {
+                            videoElement.play().then(() => {
+                                clearTimeout(currentVideoLoadTimeout);
+                                hideGifFallback();
+                                resolve(true);
+                            }).catch(e => {
+                                console.error(`Video play failed (native) for ${streamUrl}:`, e);
+                                clearTimeout(currentVideoLoadTimeout);
+                                showGifFallback();
+                                resolve(false);
+                            });
+                            videoElement.removeEventListener('loadedmetadata', onLoadedMetadata);
+                        });
+                        videoElement.addEventListener('error', function onVideoError() {
+                            console.error(`Native video playback error for ${streamUrl}.`);
+                            clearTimeout(currentVideoLoadTimeout);
                             showGifFallback(); 
+                            videoElement.removeEventListener('error', onVideoError);
                             resolve(false);
                         });
-                        hlsInstance.off(Hls.Events.MANIFEST_PARSED, onManifestParsed); 
-                    });
-                    hlsInstance.on(Hls.Events.ERROR, function onHlsError(event, data) {
-                        console.error(`Hls.js fatal error for ${streamUrl} (source issue):`, data.type, data.details);
-                        if (data.fatal) {
-                            clearTimeout(currentVideoLoadTimeout); 
-                            showGifFallback(); 
-                            hlsInstance.off(Hls.Events.ERROR, onHlsError); 
-                            resolve(false); 
-                        }
-                    });
-                } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
+                    } else {
+                        console.error('HLS is not supported by Hls.js or natively for stream:', streamUrl);
+                        clearTimeout(currentVideoLoadTimeout);
+                        showGifFallback();
+                        resolve(false); 
+                    }
+                } else if (streamUrl.endsWith('.mjpg')) {
+                    // MJPEG Stream - load directly via <video> tag
+                    const videoElement = document.createElement('video');
+                    videoElement.autoplay = true;
+                    videoElement.muted = true;
+                    videoElement.loop = true;
+                    videoElement.playsInline = true;
                     videoElement.src = streamUrl;
-                    videoElement.addEventListener('loadedmetadata', function onLoadedMetadata() {
+                    videoElement.style.width = '100%';
+                    videoElement.style.height = '100%';
+                    videoElement.style.objectFit = 'cover';
+
+                    mediaContainer.appendChild(videoElement);
+
+                    videoElement.addEventListener('loadeddata', function onLoadedData() {
+                        console.log(`MJPEG stream loadeddata for: ${streamUrl}`);
                         videoElement.play().then(() => {
                             clearTimeout(currentVideoLoadTimeout);
                             hideGifFallback();
                             resolve(true);
                         }).catch(e => {
-                            console.error(`Video play failed (native) after metadata loaded for ${streamUrl}:`, e);
+                            console.error(`MJPEG video play failed for ${streamUrl}:`, e);
                             clearTimeout(currentVideoLoadTimeout);
                             showGifFallback();
                             resolve(false);
                         });
-                        videoElement.removeEventListener('loadedmetadata', onLoadedMetadata);
+                        videoElement.removeEventListener('loadeddata', onLoadedData);
                     });
                     videoElement.addEventListener('error', function onVideoError() {
-                        console.error(`Native video playback error for ${streamUrl}.`);
+                        console.error(`MJPEG video playback error for ${streamUrl}.`);
                         clearTimeout(currentVideoLoadTimeout);
-                        showGifFallback(); 
+                        showGifFallback();
                         videoElement.removeEventListener('error', onVideoError);
                         resolve(false);
                     });
                 } else {
-                    console.error('HLS is not supported and native playback failed for stream.');
+                    console.error('Unsupported video stream format or embed type:', streamUrl);
                     clearTimeout(currentVideoLoadTimeout);
                     showGifFallback();
-                    resolve(false); 
+                    resolve(false);
                 }
             });
         }
@@ -574,7 +677,6 @@
                 return weatherData; 
             } catch (error) {
                 console.error('Error fetching weather data:', error.message);
-                displayError('Failed to load weather data. Please try again later.');
                 return null; 
             }
         }
@@ -582,43 +684,49 @@
         // Display weather data
         function displayWeatherData(data, cityDisplayName, state) {
             const weatherCard = document.getElementById('weatherCard');
-            if (data && data.main && data.weather && data.wind) {
-                const temp = Math.round(data.main.temp);
-                const feelsLike = Math.round(data.main.feels_like);
-                const description = data.weather[0].description;
-                const humidity = data.main.humidity;
-                const windSpeed = Math.round(data.wind.speed);
-                const windDirection = data.wind.deg ? getWindDirection(data.wind.deg) : 'N/A';
-                const visibility = data.visibility ? (data.visibility / 1609.34).toFixed(1) : 'N/A'; // Convert meters to miles
-
+            if (!data || !data.main || !data.weather || !data.wind) {
                 weatherCard.innerHTML = `
                     <div class="location">${cityDisplayName}, ${state}</div>
+                    <div class="error" style="margin-top: 20px;">Weather data currently unavailable.</div>
                     <div class="time-date" id="currentDateTime">Loading Date/Time...</div>
-                    <div class="current-temp">${temp}°F</div>
-                    <div class="weather-description">${description}</div>
-                    <div class="weather-details">
-                        <div class="detail-item">
-                            <div class="detail-label">Feels Like</div>
-                            <div class="detail-value">${feelsLike}°F</div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Humidity</div>
-                            <div class="detail-value">${humidity}%</div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Wind</div>
-                            <div class="detail-value">${windSpeed} mph ${windDirection}</div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Visibility</div>
-                            <div class="detail-value">${visibility} mi</div>
-                        </div>
-                    </div>
                 `;
-                updateClock(); 
-            } else {
-                displayError('Weather data format is unexpected.');
+                updateClock();
+                return; 
             }
+
+            const temp = Math.round(data.main.temp);
+            const feelsLike = Math.round(data.main.feels_like);
+            const description = data.weather[0]?.description || 'N/A'; 
+            const humidity = data.main.humidity || 'N/A';
+            const windSpeed = Math.round(data.wind.speed) || 'N/A';
+            const windDirection = data.wind.deg ? getWindDirection(data.wind.deg) : 'N/A';
+            const visibility = data.visibility ? (data.visibility / 1609.34).toFixed(1) : 'N/A';
+
+            weatherCard.innerHTML = `
+                <div class="location">${cityDisplayName}, ${state}</div>
+                <div class="time-date" id="currentDateTime">Loading Date/Time...</div>
+                <div class="current-temp">${temp}°F</div>
+                <div class="weather-description">${description}</div>
+                <div class="weather-details">
+                    <div class="detail-item">
+                        <div class="detail-label">Feels Like</div>
+                        <div class="detail-value">${feelsLike}°F</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Humidity</div>
+                        <div class="detail-value">${humidity}%</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Wind</div>
+                        <div class="detail-value">${windSpeed} mph ${windDirection}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Visibility</div>
+                        <div class="detail-value">${visibility} mi</div>
+                    </div>
+                </div>
+            `;
+            updateClock(); 
         }
 
         // Update current time and date
@@ -634,7 +742,6 @@
             }
         }
 
-        // Display error message in weather card
         function displayError(message) {
             const weatherCard = document.getElementById('weatherCard');
             weatherCard.innerHTML = `<div class="error">${message}</div>`;
@@ -813,58 +920,50 @@
             const nextVideoBgId = (activeVideoBackgroundId === 'videoBackground1') ? 'videoBackground2' : 'videoBackground1';
             const nextVideoBg = document.getElementById(nextVideoBgId);
 
-            // Make sure new video background is prepared off-screen and visible for transition
             nextVideoBg.style.transition = 'none';
             nextVideoBg.style.transform = 'translateX(-100%)';
             nextVideoBg.classList.remove('inactive-bg');
             nextVideoBg.classList.add('active-bg');
             nextVideoBg.style.display = 'block';
 
-            // 1. Fade out current weather card (1 second)
             console.log('Transition: Phase 1 - Fading out current weather card.');
             weatherCard.style.transition = 'opacity 1s ease-out';
             weatherCard.style.opacity = '0';
             await new Promise(resolve => setTimeout(resolve, 1000));
 
-            // After fade out, reset current weather card's position (it's already transparent)
             weatherCard.style.transition = 'none';
-            weatherCard.style.transform = 'translateX(-100%)'; // Move off-screen left
-            weatherCard.style.display = 'none'; // CRUCIAL: Hide it completely
-            weatherCard.offsetHeight; // Force reflow
+            weatherCard.style.transform = 'translateX(-100%)'; 
+            weatherCard.style.display = 'none'; 
+            weatherCard.offsetHeight; 
 
             // 2. Slide out current video AND Slide in interstitial (1 second)
             console.log('Transition: Phase 2 - Sliding out current video, sliding in interstitial.');
             currentVideoBg.style.transition = 'transform 1s ease-in-out';
-            currentVideoBg.style.transform = 'translateX(100%)'; // Current video slides out right
+            currentVideoBg.style.transform = 'translateX(100%)'; 
 
             interstitialBackground.style.display = 'block';
+            interstitialBackground.offsetHeight; // Force reflow here
             interstitialBackground.style.transition = 'transform 1s ease-in-out';
-            interstitialBackground.style.transform = 'translateX(0%)'; // Interstitial slides in from left
+            interstitialBackground.style.transform = 'translateX(0%)'; 
 
             await new Promise(resolve => setTimeout(resolve, 1000));
 
-            // After current video is off-screen, hide and reset it
             currentVideoBg.classList.remove('active-bg');
             currentVideoBg.classList.add('inactive-bg');
             currentVideoBg.style.transition = 'none';
-            currentVideoBg.style.transform = 'translateX(-100%)'; // Reset position
-            currentVideoBg.style.display = 'none'; // Truly hide
+            currentVideoBg.style.transform = 'translateX(-100%)'; 
+            currentVideoBg.style.display = 'none'; 
 
-            // 3. Interstitial Hold & Update New Weather Data (1 second)
             console.log('Transition: Phase 3 - Interstitial hold, updating weather data. Weather card display is NONE.');
-            // Populate new city's weather data into the weather card (still hidden/transparent/off-screen)
             if (cityConfigToDisplay.weatherData) {
                 displayWeatherData(cityConfigToDisplay.weatherData, cityConfigToDisplay.displayName, cityConfigToDisplay.state);
-                // Ensure new weather card content is there, but still transparent and off-screen
                 weatherCard.style.opacity = '0';
-                weatherCard.style.transform = 'translateX(-100%)'; // Ensure it's off-screen left
-                // weatherCard.style.display remains 'none' from Phase 1.
-                weatherCard.offsetHeight; // Force reflow to apply content and transform before next phase
+                weatherCard.style.transform = 'translateX(-100%)'; 
+                weatherCard.offsetHeight; 
             } else {
-                displayError('Weather data unavailable for this location.');
+                displayWeatherData(null, cityConfigToDisplay.displayName, cityConfigToDisplay.state); 
                 weatherCard.style.opacity = '0';
-                weatherCard.style.transform = 'translateX(0%)'; // Center error message (but still hidden)
-                // weatherCard.style.display remains 'none'.
+                weatherCard.style.transform = 'translateX(0%)'; 
                 weatherCard.offsetHeight;
             }
             await new Promise(resolve => setTimeout(resolve, 1000));
@@ -873,148 +972,130 @@
             // 4. Slide out interstitial AND Slide in new video (1 second)
             console.log('Transition: Phase 4 - Sliding out interstitial, sliding in new video.');
             interstitialBackground.style.transition = 'transform 1s ease-in-out';
-            interstitialBackground.style.transform = 'translateX(100%)'; // Interstitial slides out right
+            interstitialBackground.style.transform = 'translateX(100%)'; 
 
             nextVideoBg.style.transition = 'transform 1s ease-in-out';
-            nextVideoBg.style.transform = 'translateX(0%)'; // New video slides in from left
+            nextVideoBg.style.transform = 'translateX(0%)'; 
 
             await new Promise(resolve => setTimeout(resolve, 1000));
 
-            // After interstitial slides out, hide and reset it
             interstitialBackground.style.display = 'none';
-            interstitialBackground.style.transform = 'translateX(-100%)'; // Reset for next use
+            interstitialBackground.offsetHeight; // Force reflow here
+            interstitialBackground.style.transform = 'translateX(-100%)'; 
 
-            // Update active background tracker
             activeVideoBackgroundId = nextVideoBgId;
 
-            // 5. Fade in and slide in new weather card (1 second)
             console.log('Transition: Phase 5 - Fading in and sliding in new weather card.');
-            weatherCard.style.display = 'block'; // CRUCIAL: Make it visible JUST before animating
-            weatherCard.offsetHeight; // Force reflow to apply display change before transition
-            weatherCard.style.transition = 'opacity 1s ease-in, transform 1s ease-out'; // Combined transition
+            weatherCard.style.display = 'flex'; 
+            weatherCard.offsetHeight; 
+            
+            weatherCard.style.transition = 'opacity 1s ease-in, transform 1s ease-out'; 
             weatherCard.style.opacity = '1';
-            weatherCard.style.transform = 'translateX(0%)'; // Slide to center
+            weatherCard.style.transform = 'translateX(0%)'; 
 
             await new Promise(resolve => setTimeout(resolve, 1000));
-
+            
+            weatherCard.style.transform = ''; 
             console.log('Transition complete. New city fully displayed.');
         }
 
-        let transitionPromise = Promise.resolve(); // To chain transitions
+        let transitionPromise = Promise.resolve(); 
 
         async function switchCityAndPreloadNext() {
-            // Await any ongoing transition before starting a new one
             await transitionPromise;
 
-            // Determine the city to display NOW
             currentCityIndex = (currentCityIndex + 1) % CITIES.length;
             const cityToDisplayConfig = CITIES[currentCityIndex];
 
-            // Determine the city to PRE-LOAD for the next cycle *after* the one we are about to display
-            const cityToPreloadIndex = (currentCityIndex + 1) % CITIES.length;
-            const cityToPreloadConfig = CITIES[cityToPreloadIndex];
+            transitionPromise = transitionContent(cityToDisplayConfig); 
+            await transitionPromise; 
 
-            console.log(`Starting cycle for: ${cityToDisplayConfig.displayName}. Next city to preload: ${cityToPreloadConfig.displayName}.`);
+            // Calculate the index for pre-loading *after* the current city is displayed.
+            const nextCityToPreloadIndex = (currentCityIndex + 1) % CITIES.length;
+            const cityToPreloadConfig = CITIES[nextCityToPreloadIndex];
 
-            // Run the transition for the city we are *now* displaying.
-            // We expect its data to be already pre-loaded from the *previous* cycle.
-            transitionPromise = transitionContent(cityToDisplayConfig); // Call transition with the city to display now
-            await transitionPromise; // Wait for the transition to complete
-
-            // After the transition, set a timeout to start pre-loading for the *next* transition's city
-            preLoadTimeoutId = setTimeout(async () => {
+            preLoadTimeoutId = setTimeout(async (preloadConfig) => {
                 const preLoadVideoBgId = (activeVideoBackgroundId === 'videoBackground1') ? 'videoBackground2' : 'videoBackground1';
                 const preLoadVideoBg = document.getElementById(preLoadVideoBgId);
-                const preLoadVideoElement = preLoadVideoBg.querySelector('video');
 
-                console.log(`INITIATING PRE-LOAD for ${cityToPreloadConfig.displayName}...`);
-                const videoSuccess = await loadVideo(preLoadVideoElement, cityToPreloadConfig.stream);
-                const weatherDataResult = await fetchWeatherDataAsync(cityToPreloadConfig.apiName, cityToPreloadConfig.state);
+                console.log(`INITIATING PRE-LOAD for ${preloadConfig.displayName}...`);
+                const videoSuccess = await loadVideo(preLoadVideoBg, preloadConfig.stream);
+                const weatherDataResult = await fetchWeatherDataAsync(preloadConfig.apiName, preloadConfig.state);
 
-                cityToPreloadConfig.weatherData = weatherDataResult;
-                cityToPreloadConfig.videoLoaded = videoSuccess;
-                console.log(`PRE-LOAD for ${cityToPreloadConfig.displayName} complete.`);
-            }, 50000); // Pre-load starts 50 seconds into the current city's 60-second display cycle
+                preloadConfig.weatherData = weatherDataResult;
+                preloadConfig.videoLoaded = videoSuccess;
+                console.log(`PRE-LOAD for ${preloadConfig.displayName} complete.`);
+            }, 50000, cityToPreloadConfig); 
         }
 
         // Initial load function to set up the first city's data and video
         async function initialLoad() {
             const weatherCard = document.getElementById('weatherCard');
             const initialVideoBg = document.getElementById(activeVideoBackgroundId);
-            const initialVideoElement = initialVideoBg.querySelector('video');
 
-            // For initial load, we load the first city's data and display it.
-            // Weather card initially hidden for fade-in effect.
             weatherCard.style.opacity = '0';
-            weatherCard.style.transform = 'translateX(0%)'; // Ensure it's in center but transparent
-            weatherCard.style.display = 'block'; // Make sure it's displayable for initial fade-in
+            weatherCard.style.transform = 'translateX(0%)'; 
+            weatherCard.style.display = 'block'; 
 
             console.log(`Initial load: Fetching data for ${CITIES[0].displayName}.`);
-            const videoSuccess = await loadVideo(initialVideoElement, CITIES[0].stream);
+            const videoSuccess = await loadVideo(initialVideoBg, CITIES[0].stream);
             const initialWeatherData = await fetchWeatherDataAsync(CITIES[0].apiName, CITIES[0].state);
 
             if (videoSuccess && initialWeatherData) {
                  console.log('Initial video and weather data loaded. Application ready.');
                  displayWeatherData(initialWeatherData, CITIES[0].displayName, CITIES[0].state);
-                 // Store initial weatherData directly in CITIES[0] for the first loop
                  CITIES[0].weatherData = initialWeatherData;
                  CITIES[0].videoLoaded = videoSuccess;
                  
-                 // Immediately fade in the weather card since the camera is loaded
                  weatherCard.style.transition = 'opacity 1s ease-in';
                  weatherCard.style.opacity = '1';
-                 await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for fade in
+                 await new Promise(resolve => setTimeout(resolve, 1000)); 
+                 
+                 weatherCard.style.transform = '';
 
             } else {
                 console.error('Initial load failed for video or weather data. Application might not function as expected.');
                 if (!initialWeatherData) {
-                    displayError('Failed to load initial weather data.');
-                    weatherCard.style.opacity = '1'; // Show error immediately
+                    displayWeatherData(null, CITIES[0].displayName, CITIES[0].state); 
+                    weatherCard.style.opacity = '1'; 
                 } else {
                     displayWeatherData(initialWeatherData, CITIES[0].displayName, CITIES[0].state);
-                    showGifFallback(); // Ensure GIF is shown if video specifically failed during initial load
-                    weatherCard.style.opacity = '1'; // Show weather data even if video failed
+                    showGifFallback(); 
+                    weatherCard.style.opacity = '1'; 
                 }
             }
            
-            fetchNewsData(); // Fetch news once at the start
-            setInterval(updateClock, 60000); // Update clock every minute
+            fetchNewsData(); 
+            setInterval(updateClock, 60000); 
 
-            // The main interval will call switchCityAndPreloadNext every 60 seconds.
-            // The first `switchCityAndPreloadNext` call will happen after 60 seconds from initialLoad completion.
             setInterval(switchCityAndPreloadNext, 60000); 
 
             // Trigger the initial pre-load for the *second* city (CITIES[1])
-            // 50 seconds after the initial load of CITIES[0] is *fully displayed*.
-            // Since initial display takes 1s (fade-in), the pre-load should start 50s after that.
-            preLoadTimeoutId = setTimeout(async () => {
-                const nextCityIndex = (currentCityIndex + 1) % CITIES.length; // This will be CITIES[1] initially
-                const nextCityConfig = CITIES[nextCityIndex];
+            const initialNextCityToPreloadIndex = (currentCityIndex + 1) % CITIES.length;
+            const initialCityToPreloadConfig = CITIES[initialNextCityToPreloadIndex];
+
+            preLoadTimeoutId = setTimeout(async (preloadConfig) => {
                 const preLoadVideoBgId = (activeVideoBackgroundId === 'videoBackground1') ? 'videoBackground2' : 'videoBackground1';
                 const preLoadVideoBg = document.getElementById(preLoadVideoBgId);
-                const preLoadVideoElement = preLoadVideoBg.querySelector('video');
 
-                console.log(`Initial pre-loading ${nextCityConfig.displayName}, ${nextCityConfig.state} (video and weather)...`);
-                const videoSuccess = await loadVideo(preLoadVideoElement, nextCityConfig.stream);
-                const weatherDataResult = await fetchWeatherDataAsync(nextCityConfig.apiName, nextCityConfig.state);
-                nextCityConfig.weatherData = weatherDataResult;
-                nextCityConfig.videoLoaded = videoSuccess;
-                console.log(`Initial pre-loading for ${nextCityConfig.displayName} complete.`);
-            }, 50000); // Starts 50 seconds after the very beginning of initialLoad
+                console.log(`INITIATING PRE-LOAD for ${preloadConfig.displayName}...`);
+                const videoSuccess = await loadVideo(preLoadVideoBg, preloadConfig.stream);
+                const weatherDataResult = await fetchWeatherDataAsync(preloadConfig.apiName, preloadConfig.state);
+                preloadConfig.weatherData = weatherDataResult;
+                preloadConfig.videoLoaded = videoSuccess;
+                console.log(`Initial pre-loading for ${preloadConfig.displayName} complete.`);
+            }, 50000, initialCityToPreloadConfig); 
             
-            setInterval(fetchNewsData, 1800000); // Fetch news every 30 minutes
+            setInterval(fetchNewsData, 1800000); 
         }
 
-        // Start the application when page loads
         document.addEventListener('DOMContentLoaded', initialLoad);
         
-        // Handle page visibility changes to restart video if needed
         document.addEventListener('visibilitychange', function() {
             if (!document.hidden) {
-                // Ensure only the currently active video restarts
-                const activeVideoElement = document.getElementById(activeVideoBackgroundId).querySelector('video');
-                if (activeVideoElement.paused) {
-                    activeVideoElement.play().catch(e => console.log('Video restart failed:', e));
+                const activeMediaElement = document.getElementById(activeVideoBackgroundId).querySelector('video, iframe');
+                if (activeMediaElement && typeof activeMediaElement.play === 'function') {
+                    activeMediaElement.play().catch(e => console.log('Video restart failed:', e));
                 }
             }
         });
