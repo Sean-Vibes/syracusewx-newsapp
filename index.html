@@ -481,11 +481,11 @@
                 stream: 'https://www.youtube.com/embed/-Js36EsiUgA'
             },
             {
-                displayName: 'Cavalier', // Updated city name
-                apiName: 'Cavalier',     // Updated API city name
+                displayName: 'Grand Forks',
+                apiName: 'Grand Forks',
                 state: 'ND',
                 countryCode: 'US',
-                stream: 'https://www.youtube.com/embed/y9vlso3TZ2E' // New YouTube URL
+                stream: 'https://www.youtube.com/embed/mpcvRHLGBRw'
             }
         ];
 
@@ -1035,7 +1035,7 @@
             await new Promise(resolve => setTimeout(resolve, 1000));
 
 
-            // 4. Slide out interstitial AND Slide in new video
+            // Phase 4: Slide out interstitial AND Slide in new video
             console.log('Transition: Phase 4 - Sliding out interstitial, sliding in new video.');
             interstitialBackground.style.transition = 'transform 1s ease-in-out';
             interstitialBackground.style.transform = 'translateX(100%)'; 
@@ -1045,6 +1045,7 @@
 
             await new Promise(resolve => setTimeout(resolve, 1000));
 
+            // Hide and reset interstitial after it slides out
             interstitialBackground.style.display = 'none';
             interstitialBackground.offsetHeight; // Force reflow here
             interstitialBackground.style.transform = 'translateX(-100%)'; 
@@ -1054,7 +1055,7 @@
             // Phase 5: Make weather card visible and then fade in and slide in
             console.log('Transition: Phase 5 - Fading in and sliding in new weather card.');
             weatherCard.style.display = 'flex'; 
-            weatherCard.offsetHeight; 
+            weatherCard.offsetHeight; // Force reflow to apply display change before transition
             
             weatherCard.style.transition = 'opacity 1s ease-in, transform 1s ease-out'; 
             weatherCard.style.opacity = '1';
