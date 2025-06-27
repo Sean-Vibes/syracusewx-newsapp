@@ -363,12 +363,6 @@
             text-align: center;
         }
 
-        /* No music controls in this version */
-        /* .music-controls { ... } */
-        /* .music-control-button { ... } */
-        /* .volume-slider-container { ... } */
-        /* .volume-slider { ... } */
-
         @media (max-width: 768px) {
             .weather-card {
                 padding: 30px 20px;
@@ -444,10 +438,7 @@
         </div>
     </div>
 
-    <!-- Music Controls Container (Removed) -->
-    <!-- <div class="music-controls"> ... </div> -->
-
-    <!-- News Ticker HTML from news_ticker_code3.txt -->
+    <!-- News Ticker HTML -->
     <div class="news-ticker">
         <div class="news-label">News</div>
         <div class="news-content">
@@ -459,7 +450,6 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.10/hls.min.js"></script>
-    <!-- Tone.js library import (Removed) -->
     <script>
         // API key for OpenWeatherMap (replace with your own if you have one)
         const API_KEY = '1cf8937cc9682ba717da9c52c975283e';
@@ -544,8 +534,7 @@
         let currentCityIndex = 0;
         let activeVideoBackgroundId = 'videoBackground1'; 
 
-        const NEWS_API_KEY = '28da12c05d7d45efa1594b14339070c0';
-        const RSS_API_KEY = 'sJGWtKgYEYFB6VzT7FNgNYxhPxOGfbVhsP8JaKTd';
+        // Removed unused NEWS_API_KEY and RSS_API_KEY
         const FALLBACK_GIF = 'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExeDdra200dG45YW9qYTN5YW9qYTNyaHE0ZjNrZDR0and2OWF1NGs2ajM5enRnMiZlcD12MV9pbnRlcm5sYWZfYnlfaWQmY3Q9Zw/m2hjlbNbSRGy4/giphy.gif';
         
         let weatherData = {};
@@ -695,7 +684,7 @@
                         console.error(`MJPEG video playback error for ${streamUrl}.`);
                         clearTimeout(currentVideoLoadTimeout);
                         resolve(false);
-                        videoElement.removeEventListener('error', onVideoError);
+                        videoElement.removeEventListener('error', onVideoData);
                     });
                 } else {
                     console.error('Unsupported video stream format or embed type:', streamUrl);
@@ -1284,6 +1273,7 @@
                 showGifFallback(); // Always show GIF fallback if weather data fails
             }
            
+            // CONFIRMATION: The news ticker is fetched here on initial load.
             fetchNewsData(); 
             setInterval(() => {
                 const currentCityConfig = CITIES[currentCityIndex];
@@ -1324,6 +1314,7 @@
                 console.log(`PRE-LOAD for ${preloadConfig.displayName} complete.`);
             }, 50000, initialCityToPreloadConfig); 
             
+            // CONFIRMATION: The news ticker is refreshed here every 30 minutes.
             setInterval(fetchNewsData, 1800000); 
 
         }
