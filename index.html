@@ -451,6 +451,9 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.10/hls.min.js"></script>
     <script>
+        // DEBUG: Script tag started
+        console.log("Script tag started executing.");
+
         // API key for OpenWeatherMap (replace with your own if you have one)
         const API_KEY = '1cf8937cc9682ba717da9c52c975283e';
         
@@ -534,7 +537,6 @@
         let currentCityIndex = 0;
         let activeVideoBackgroundId = 'videoBackground1'; 
 
-        // Removed unused NEWS_API_KEY and RSS_API_KEY
         const FALLBACK_GIF = 'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExeDdra200dG45YW9qYTN5YW9qYTNyaHE0ZjNrZDR0and2OWF1NGs2ajM5enRnMiZlcD12MV9pbnRlcm5sYWZfYnlfaWQmY3Q9Zw/m2hjlbNbSRGy4/giphy.gif';
         
         let weatherData = {};
@@ -683,8 +685,8 @@
                     videoElement.addEventListener('error', function onVideoError() {
                         console.error(`MJPEG video playback error for ${streamUrl}.`);
                         clearTimeout(currentVideoLoadTimeout);
-                        resolve(false);
-                        videoElement.removeEventListener('error', onVideoData);
+                        videoElement.removeEventListener('error', onVideoError); 
+                        resolve(false); // Resolve false on error
                     });
                 } else {
                     console.error('Unsupported video stream format or embed type:', streamUrl);
@@ -718,7 +720,8 @@
 
         // Fetch weather data from OpenWeatherMap
         async function fetchWeatherDataAsync(apiCityName, state, countryCode) { 
-            console.log(`Fetching weather data for ${apiCityName}, ${state}, ${countryCode}...`);
+            // DEBUG: fetchWeatherDataAsync called
+            console.log(`DEBUG: fetchWeatherDataAsync called for ${apiCityName}.`);
             let queryParam = `${apiCityName}`;
             if (state && countryCode === 'US') { // Include state only for US cities
                 queryParam += `,${state}`;
@@ -837,7 +840,8 @@
          * News Ticker JavaScript
          */
         async function fetchNewsData() {
-            console.log('Fetching news data...');
+            // DEBUG: fetchNewsData called
+            console.log('DEBUG: fetchNewsData called.');
             const newsScroll = document.getElementById('newsScroll');
             newsScroll.innerHTML = `<div class="news-loading">Loading latest news...</div>`;
 
@@ -1201,6 +1205,9 @@
 
         // Initial load function to set up the first city's data and video
         async function initialLoad() {
+            // DEBUG: initialLoad function started
+            console.log("DEBUG: initialLoad function started.");
+
             const weatherCard = document.getElementById('weatherCard');
             const initialVideoBg = document.getElementById(activeVideoBackgroundId);
             const interstitialImageElement = document.getElementById('interstitialImage');
@@ -1273,7 +1280,6 @@
                 showGifFallback(); // Always show GIF fallback if weather data fails
             }
            
-            // CONFIRMATION: The news ticker is fetched here on initial load.
             fetchNewsData(); 
             setInterval(() => {
                 const currentCityConfig = CITIES[currentCityIndex];
@@ -1314,7 +1320,6 @@
                 console.log(`PRE-LOAD for ${preloadConfig.displayName} complete.`);
             }, 50000, initialCityToPreloadConfig); 
             
-            // CONFIRMATION: The news ticker is refreshed here every 30 minutes.
             setInterval(fetchNewsData, 1800000); 
 
         }
