@@ -3,18 +3,1343 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultra Minimal Test</title>
+    <title>Weather Live View</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .video-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            transition: transform 1s ease-in-out; /* Added transition for sliding */
+        }
+
+        .video-background .media-container {
+            width: 100%;
+            height: 100%;
+            position: relative; /* Ensure children are positioned relative to this */
+            overflow: hidden;
+        }
+
+        .video-background .media-container video,
+        .video-background .media-container iframe {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Ensures video/iframe covers the entire container */
+            display: block; /* Remove extra space below inline elements */
+            position: absolute; /* Allows object-fit to work reliably with position */
+            top: 0;
+            left: 0;
+        }
+
+
+        .gif-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2; /* Lower z-index for GIF so videos can cover it */
+            background-image: url('https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExeDdra200dG45YW9qYTN5YW9qYTNyaHE0ZjNrZDR0and2OWF1NGs2ajM5enRnMiZlcD12MV9pbnRlcm5sYWZfYnlfaWQmY3Q9Zw/m2hjlbNbSRGy4/giphy.gif');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            display: none; /* Hidden by default, only shown if video fails */
+        }
+
+        /* Interstitial Image Background */
+        .interstitial-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0; /* Higher than video backgrounds, lower than weather card */
+            display: none; /* Hidden by default */
+            transform: translateX(-100%); /* Start off-screen left */
+            transition: transform 1s ease-in-out;
+        }
+
+        .interstitial-background img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+
+        /* Styles for managing active and inactive video backgrounds */
+        .video-background.active-bg {
+            transform: translateX(0%);
+            z-index: -1; /* Active video is above inactive */
+        }
+
+        .video-background.inactive-bg {
+            transform: translateX(-100%); /* Hidden off-screen to the left */
+            z-index: -1;
+            pointer-events: none; /* Make it non-interactive when hidden */
+        }
+
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.1) 100%);
+            z-index: 1;
+        }
+
+        .weather-container {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            padding: 20px;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .weather-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 40px;
+            /* Added flex properties to center content reliably within the card */
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* This will center all direct children horizontally */
+            
+            text-align: center; /* Keep for general text alignment for non-flex children or inline content */
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 100%;
+            animation: fadeInUp 1s ease-out; /* Keep initial fade-in */
+            opacity: 1; /* Default to visible */
+            transition: opacity 1s ease-in-out, transform 1s ease-in-out; /* Combined for fade and slide */
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .location {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: white;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.9);
+            font-family: 'Arial Black', Arial, sans-serif;
+            letter-spacing: 1px;
+        }
+
+        .current-temp {
+            font-size: 6rem;
+            font-weight: 100;
+            margin: 10px 0; /* Tightened spacing */
+            line-height: 1;
+        }
+
+        .time-date {
+            font-size: 1.6rem;
+            margin-bottom: 10px; /* Tightened spacing */
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        .weather-description {
+            font-size: 1.8rem;
+            margin-bottom: 15px; /* Tightened spacing */
+            opacity: 0.9;
+            text-transform: capitalize;
+            font-weight: 500;
+        }
+
+        .weather-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 15px; /* Tightened spacing */
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            /* Ensure grid itself is centered within its flex parent (.weather-card) */
+            justify-content: center; /* For grid, similar to align-items: center for flex column */
+            align-items: center; /* For grid, if items themselves need vertical alignment */
+            width: 100%; /* Important for centering if content is smaller than card */
+        }
+
+        .detail-item {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.08) 100%);
+            padding: 20px 15px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: all 0.3s ease;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .detail-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .detail-item:hover {
+            transform: translateY(-5px) scale(1.02);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.12) 100%);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .detail-item:hover::before {
+            transform: scaleX(1);
+        }
+
+        .detail-item:nth-child(1)::before {
+            background: linear-gradient(90deg, #ff9a9e 0%, #fecfef 100%);
+        }
+
+        .detail-item:nth-child(2)::before {
+            background: linear-gradient(90deg, #a8edea 0%, #fed6e3 100%);
+        }
+
+        .detail-item:nth-child(3)::before {
+            background: linear-gradient(90deg, #ffecd2 0%, #fcb69f 100%);
+        }
+
+        .detail-item:nth-child(4)::before {
+            background: linear-gradient(90deg, #a8c8ec 0%, #7faadb 100%);
+        }
+
+        .detail-label {
+            font-size: 1rem;
+            opacity: 0.85;
+            margin-bottom: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .detail-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: white;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+        }
+
+        /* News Ticker Styles from news_ticker_code3.txt */
+        .news-ticker {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 80px;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.9) 0%, rgba(20, 20, 20, 0.95) 100%);
+            backdrop-filter: blur(15px);
+            border-top: 2px solid rgba(255, 255, 255, 0.1);
+            z-index: 10;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+        }
+
+        .news-label {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            color: white;
+            padding: 0 20px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            min-width: 140px;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .news-content {
+            flex: 1;
+            height: 100%;
+            overflow: hidden; /* This hides the overflowing content, crucial for marquee effect */
+            position: relative;
+        }
+
+        .news-scroll {
+            display: flex; /* Makes sure the inner duplicated content sits side-by-side */
+            width: max-content; /* Allows this container to be as wide as all its content */
+            height: 100%;
+            align-items: center;
+            animation: scroll-left 90s linear infinite; /* Animation applied here */
+        }
+
+        /* Target the duplicated news content blocks inside news-scroll */
+        .news-scroll > div {
+            white-space: nowrap; /* Ensures all news items within each block stay on one line */
+            display: inline-flex; /* Ensures proper layout of news items */
+            align-items: center;
+        }
+
+        @keyframes scroll-left {
+            0% {
+                transform: translateX(0);
+            }
+            /* Move exactly one copy of the content to the left for a seamless loop */
+            100% {
+                transform: translateX(-50%); /* Moves 50% of news-scroll's total width (one full content block) */
+            }
+        }
+
+        .news-item {
+            color: white;
+            font-size: 1.8rem;
+            margin-right: 80px;
+            display: inline-flex;
+            align-items: center;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            font-weight: 500;
+        }
+
+        .news-item::before {
+            content: "●";
+            color: #ff6b6b;
+            margin-right: 16px;
+            font-size: 1.4rem;
+        }
+
+        .news-loading {
+            color: white;
+            font-size: 1.6rem;
+            padding: 0 20px;
+            opacity: 0.7;
+            font-weight: 500;
+        }
+
+        .loading {
+            font-size: 1.5rem;
+            opacity: 0.8;
+        }
+
+        .error {
+            color: #ff6b6b;
+            font-size: 1.2rem;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .weather-card {
+                padding: 30px 20px;
+                margin: 20px;
+            }
+            .location {
+                font-size: 2.5rem;
+            }
+            .current-temp {
+                font-size: 5rem;
+            }
+            .time-date {
+                font-size: 1.4rem;
+            }
+            .weather-description {
+                font-size: 1.6rem;
+            }
+            .weather-details {
+                grid-template-columns: 1fr;
+                gap: 12px;
+                padding: 15px;
+            }
+            .detail-item {
+                padding: 15px 12px;
+            }
+            .detail-label {
+                font-size: 0.9rem;
+            }
+            .detail-value {
+                font-size: 1.6rem;
+            }
+            /* News Ticker Media Queries from news_ticker_code3.txt */
+            .news-ticker {
+                height: 70px;
+            }
+
+            .news-item {
+                font-size: 1.5rem;
+                margin-right: 60px;
+            }
+
+            .news-label {
+                font-size: 1rem;
+                min-width: 120px;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>Ultra Minimal Test Page</h1>
-    <p>If you see this, basic HTML is loading. Please check the browser console.</p>
+    <!-- Two video backgrounds for seamless transitions -->
+    <div class="video-background active-bg" id="videoBackground1">
+        <div class="media-container" id="mediaContainer1">
+            <!-- Video or iframe will be dynamically placed here -->
+        </div>
+    </div>
+    <div class="video-background inactive-bg" id="videoBackground2">
+        <div class="media-container" id="mediaContainer2">
+            <!-- Video or iframe will be dynamically placed here -->
+        </div>
+    </div>
 
-    <!-- External script that was in the original full app -->
+    <!-- Interstitial Image Background -->
+    <div class="interstitial-background" id="interstitialBackground">
+        <img id="interstitialImage" src="https://images.pexels.com/photos/1118873/pexels-photo-1118873.jpeg?cs=srgb&dl=pexels-jplenio-1118873.jpg&fm=jpg" alt="Transition Image - Weather and Landscape" onerror="this.onerror=null; this.src='https://placehold.co/1920x1080/000000/FFFFFF?text=Image+Unavailable';" >
+    </div>
+
+    <div class="gif-background" id="gifBackground"></div>
+    <div class="overlay"></div>
+
+    <div class="weather-container">
+        <div class="weather-card" id="weatherCard">
+            <div class="loading" id="loading">Loading weather data...</div>
+        </div>
+    </div>
+
+    <!-- News Ticker HTML -->
+    <div class="news-ticker">
+        <div class="news-label">News</div>
+        <div class="news-content">
+            <div class="news-scroll" id="newsScroll">
+                <!-- News items will be populated and duplicated here by JavaScript for seamless scrolling -->
+                <div class="news-loading">Loading latest news...</div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.10/hls.min.js"></script>
-
-    <!-- Your main application script block with only the first console.log -->
     <script>
-        console.log("DEBUG: Main script tag is executing!");
-    </script>
-</body>
-</html>
+        // DEBUG: Script tag started executing.
+        console.log("Script tag started executing.");
+
+        // API key for OpenWeatherMap (replace with your own if you have one)
+        const API_KEY = '1cf8937cc9682ba717da9c52c975283e';
+        
+        // Unsplash Access Key for dynamic interstitial images
+        const UNSPLASH_ACCESS_KEY = 'xaOd97e-47tGGn4whKKYaDD_JJNoqGQnKJlVRR4Iurg';
+
+        // Define the city configurations
+        const CITIES = [
+            {
+                displayName: 'Syracuse',
+                apiName: 'Syracuse',
+                state: 'NY', 
+                countryCode: 'US', 
+                stream: 'https://tower.armorycam.com/stream/armorystream.m3u8'
+            },
+            {
+                displayName: 'Sydney',
+                apiName: 'Sydney',
+                state: '', 
+                countryCode: 'AU', 
+                stream: 'https://www.youtube.com/embed/5uZa3-RMFos'
+            },
+            {
+                displayName: 'Myrtle Beach', 
+                apiName: 'Myrtle Beach',     
+                state: 'SC',
+                countryCode: 'US',
+                stream: 'https://www.youtube.com/embed/MAPDh0XDtZs'
+            },
+            {
+                displayName: 'Toronto',
+                apiName: 'Toronto',
+                state: 'ON', 
+                countryCode: 'CA', 
+                stream: 'https://www.youtube.com/embed/-Js36EsiUgA'
+            },
+            {
+                displayName: 'Cavalier', 
+                apiName: 'Cavalier',     
+                state: 'ND',
+                countryCode: 'US',
+                stream: 'https://www.youtube.com/embed/y9vlso3TZ2E' 
+            },
+            {
+                displayName: 'Tokyo',
+                apiName: 'Tokyo',
+                state: '',
+                countryCode: 'JP',
+                stream: 'https://www.youtube.com/embed/KsoxRtx01KE' 
+            },
+            {
+                displayName: 'San Diego',
+                apiName: 'San Diego',
+                state: 'CA',
+                countryCode: 'US',
+                stream: 'https://www.youtube.com/embed/yJgfAV8lXyI' 
+            },
+            {
+                displayName: 'Oxford', 
+                apiName: 'Oxford',
+                state: '', 
+                countryCode: 'GB', 
+                stream: 'https://www.youtube.com/embed/-FguEt6H91s' 
+            },
+            {
+                displayName: 'Fort Lauderdale',
+                apiName: 'Fort Lauderdale',
+                state: 'FL',
+                countryCode: 'US',
+                stream: 'https://www.youtube.com/embed/4YFHDjig1hc' 
+            },
+            { // New City: Bend, OR
+                displayName: 'Bend',
+                apiName: 'Bend',
+                state: 'OR',
+                countryCode: 'US',
+                stream: 'https://www.youtube.com/embed/BR7Yppmd-aM' 
+            }
+        ];
+
+        let currentCityIndex = 0;
+        let activeVideoBackgroundId = 'videoBackground1'; 
+
+        const FALLBACK_GIF = 'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExeDdra200dG45YW9qYTN5YW9qYTNyaHE0ZjNrZDR0and2OWF1NGs2ajM5enRnMiZlcD12MV9pbnRlcm5sYWZfYnlfaWQmY3Q9Zw/m2hjlbNbSRGy4/giphy.gif';
+        
+        let weatherData = {};
+        let newsData = [];
+        let videoLoadTimeout;
+        let hlsInstance = null; 
+        let preLoadTimeoutId = null; 
+
+        // Variables for auto-refresh logic
+        let loopCounter = 0;
+        const REFRESH_AFTER_FULL_LOOPS = 3; // Refresh after 3 full loops
+
+        // Function to show GIF fallback, adapting for two video backgrounds
+        function showGifFallback() {
+            document.getElementById('videoBackground1').style.display = 'none';
+            document.getElementById('videoBackground2').style.display = 'none';
+            document.getElementById('interstitialBackground').style.display = 'none'; 
+            document.getElementById('gifBackground').style.display = 'block';
+            console.log('Showing GIF fallback for ALL video backgrounds due to stream error.');
+        }
+
+        // Function to hide GIF fallback and show the active video background
+        function hideGifFallback() {
+            document.getElementById('gifBackground').style.display = 'none';
+            document.getElementById(activeVideoBackgroundId).style.display = 'block';
+            console.log(`Hiding GIF fallback, showing active video: ${activeVideoBackgroundId}`);
+        }
+
+        // Initialize video stream (or embed) for a specific video background div
+        function loadVideo(videoBackgroundDiv, streamUrl) {
+            return new Promise((resolve) => {
+                clearTimeout(videoLoadTimeout); 
+                const mediaContainer = videoBackgroundDiv.querySelector('.media-container');
+                mediaContainer.innerHTML = ''; // Clear previous media
+
+                let currentVideoLoadTimeout = setTimeout(() => {
+                    console.log(`Media load timeout for ${streamUrl}. Resolving false for playback.`);
+                    resolve(false); // Resolve false if media fails to load within timeout
+                }, 7000); 
+
+                if (streamUrl.includes('youtube.com/embed/')) {
+                    // YouTube Embed
+                    const iframe = document.createElement('iframe');
+                    const videoId = streamUrl.split('/').pop().split('?')[0]; 
+                    // Crucial fix: Added autoplay=1 parameter here for YouTube embeds
+                    iframe.src = `${streamUrl}?autoplay=1&mute=1&controls=0&loop=1&playlist=${videoId}`; 
+                    iframe.title = 'Live Stream';
+                    iframe.frameborder = '0';
+                    iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+                    iframe.referrerPolicy = 'strict-origin-when-cross-origin';
+                    iframe.allowFullscreen = true;
+                    iframe.style.width = '100%';
+                    iframe.style.height = '100%';
+                    iframe.style.objectFit = 'cover'; 
+                    iframe.style.position = 'absolute'; 
+                    iframe.style.top = '0';
+                    iframe.style.left = '0';
+
+                    iframe.onload = () => {
+                        console.log(`YouTube iframe loaded for: ${streamUrl}`);
+                        clearTimeout(currentVideoLoadTimeout);
+                        resolve(true); // Resolve true on load, but don't play yet (YouTube handles autoplay via src)
+                    };
+                    iframe.onerror = () => {
+                        console.error(`YouTube iframe failed to load for: ${streamUrl}`);
+                        clearTimeout(currentVideoLoadTimeout);
+                        resolve(false);
+                    };
+                    mediaContainer.appendChild(iframe);
+
+                } else if (streamUrl.endsWith('.m3u8')) {
+                    // HLS Stream
+                    const videoElement = document.createElement('video');
+                    videoElement.muted = true;
+                    videoElement.loop = true;
+                    videoElement.playsInline = true;
+                    videoElement.style.width = '100%';
+                    videoElement.style.height = '100%';
+                    videoElement.style.objectFit = 'cover';
+
+                    mediaContainer.appendChild(videoElement);
+
+                    // Destroy existing HLS instance if it's attached to the *same* media element
+                    if (hlsInstance && hlsInstance.media === videoElement) {
+                        hlsInstance.destroy();
+                        hlsInstance = null;
+                    }
+                    
+                    if (Hls.isSupported()) {
+                        hlsInstance = new Hls({ enableWorker: true, lowLatencyMode: true, backBufferLength: 90 });
+                        hlsInstance.loadSource(streamUrl);
+                        hlsInstance.attachMedia(videoElement);
+                        hlsInstance.on(Hls.Events.MANIFEST_PARSED, function onManifestParsed() {
+                            console.log(`HLS manifest parsed for stream: ${streamUrl}`);
+                            clearTimeout(currentVideoLoadTimeout); 
+                            resolve(true); // Resolve true on manifest parsed, but don't play yet
+                            hlsInstance.off(Hls.Events.MANIFEST_PARSED, onManifestParsed); 
+                        });
+                        hlsInstance.on(Hls.Events.ERROR, function onHlsError(event, data) {
+                            console.error(`Hls.js fatal error for ${streamUrl}:`, data.type, data.details);
+                            if (data.fatal) {
+                                clearTimeout(currentVideoLoadTimeout); 
+                                resolve(false); // Resolve false on fatal error
+                                hlsInstance.off(Hls.Events.ERROR, onHlsError); 
+                            }
+                        });
+                    } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
+                        // Native HLS for Safari
+                        videoElement.src = streamUrl;
+                        videoElement.addEventListener('loadedmetadata', function onLoadedMetadata() {
+                            console.log(`Native HLS loadedmetadata for: ${streamUrl}`);
+                            clearTimeout(currentVideoLoadTimeout);
+                            resolve(true); // Resolve true on loadedmetadata, but don't play yet
+                            videoElement.removeEventListener('loadedmetadata', onLoadedMetadata);
+                        });
+                        videoElement.addEventListener('error', function onVideoError() {
+                            console.error(`Native video playback error for ${streamUrl}.`);
+                            clearTimeout(currentVideoLoadTimeout);
+                            resolve(false); 
+                            videoElement.removeEventListener('error', onVideoError);
+                        });
+                    } else {
+                        console.error('HLS is not supported by Hls.js or natively for stream:', streamUrl);
+                        clearTimeout(currentVideoLoadTimeout);
+                        resolve(false); 
+                    }
+                } else if (streamUrl.endsWith('.mjpg')) {
+                    // MJPEG Stream - load directly via <video> tag
+                    const videoElement = document.createElement('video');
+                    videoElement.muted = true;
+                    videoElement.loop = true;
+                    videoElement.playsInline = true;
+                    videoElement.src = streamUrl;
+                    videoElement.style.width = '100%';
+                    videoElement.style.height = '100%';
+                    videoElement.objectFit = 'cover';
+
+                    mediaContainer.appendChild(videoElement);
+
+                    videoElement.addEventListener('loadeddata', function onLoadedData() {
+                        console.log(`MJPEG stream loadeddata for: ${streamUrl}`);
+                        clearTimeout(currentVideoLoadTimeout);
+                        resolve(true); // Resolve true on loadeddata, but don't play yet
+                        videoElement.removeEventListener('loadeddata', onLoadedData);
+                    });
+                    videoElement.addEventListener('error', function onVideoError() {
+                        console.error(`MJPEG video playback error for ${streamUrl}.`);
+                        clearTimeout(currentVideoLoadTimeout);
+                        videoElement.removeEventListener('error', onVideoError); 
+                        resolve(false); // Resolve false on error
+                    });
+                } else {
+                    console.error('Unsupported video stream format or embed type:', streamUrl);
+                    clearTimeout(currentVideoLoadTimeout);
+                    resolve(false);
+                }
+            });
+        }
+
+        // Function to fetch image from Unsplash
+        async function getUnsplashImageUrl(query) {
+            try {
+                const url = `https://api.unsplash.com/photos/random?query=${encodeURIComponent(query)}&client_id=${UNSPLASH_ACCESS_KEY}`;
+                const response = await fetch(url);
+                if (!response.ok) {
+                    console.warn(`Unsplash API call failed for query "${query}". Status: ${response.status}`);
+                    return null;
+                }
+                const data = await response.json();
+                if (data && data.urls && data.urls.regular) {
+                    return data.urls.regular;
+                } else {
+                    console.warn(`No regular image URL found in Unsplash response for query "${query}".`);
+                    return null;
+                }
+            } catch (error) {
+                console.error(`Error fetching Unsplash image for query "${query}":`, error);
+                return null;
+            }
+        }
+
+        // Fetch weather data from OpenWeatherMap
+        async function fetchWeatherDataAsync(apiCityName, state, countryCode) { 
+            // DEBUG: fetchWeatherDataAsync called
+            console.log(`DEBUG: fetchWeatherDataAsync called for ${apiCityName}.`);
+            let queryParam = `${apiCityName}`;
+            if (state && countryCode === 'US') { // Include state only for US cities
+                queryParam += `,${state}`;
+            }
+            if (countryCode) { // Always include country code if available
+                queryParam += `,${countryCode}`;
+            }
+            const url = `https://api.openweathermap.org/data/2.5/weather?q=${queryParam}&units=imperial&appid=${API_KEY}`;
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`Weather data not found for ${apiCityName}, ${state}. Status: ${response.status}`);
+                }
+                weatherData = await response.json(); 
+                // Store the main weather condition for Unsplash query and timezone
+                weatherData.fetchedCondition = weatherData.weather[0]?.main || weatherData.weather[0]?.description || 'weather';
+                console.log('Weather data fetched:', weatherData);
+                return weatherData; 
+            } catch (error) {
+                console.error('Error fetching weather data:', error.message);
+                return null; 
+            }
+        }
+
+        // Display weather data
+        function displayWeatherData(data, cityDisplayName, state) {
+            const weatherCard = document.getElementById('weatherCard');
+            // For non-US cities like Sydney, we don't display a state.
+            // For US cities, we display the state.
+            let displayLocation = state && CITIES[currentCityIndex].countryCode === 'US' ? `${cityDisplayName}, ${state}` : cityDisplayName; 
+            // Special handling for Oxford to show 'Oxford, England'
+            if (cityDisplayName === 'Oxford' && CITIES[currentCityIndex].countryCode === 'GB') {
+                displayLocation = 'Oxford, England';
+            }
+
+            if (!data || !data.main || !data.weather || !data.wind) {
+                weatherCard.innerHTML = `
+                    <div class="location">${displayLocation}</div>
+                    <div class="error" style="margin-top: 20px;">Weather data currently unavailable.</div>
+                    <div class="time-date" id="currentDateTime">Loading Date/Time...</div>
+                `;
+                // Pass a default or zero timezone offset if data is missing, to at least show local time
+                updateClock(0); 
+                return; 
+            }
+
+            const temp = Math.round(data.main.temp);
+            const feelsLike = Math.round(data.main.feels_like);
+            const description = data.weather[0]?.description || 'N/A'; 
+            const humidity = data.main.humidity || 'N/A';
+            const windSpeed = Math.round(data.wind.speed) || 'N/A';
+            const windDirection = data.wind.deg ? getWindDirection(data.wind.deg) : 'N/A';
+            const visibility = data.visibility ? (data.visibility / 1609.34).toFixed(1) : 'N/A';
+            const timezoneOffsetSeconds = data.timezone || 0; // Get timezone offset
+
+            weatherCard.innerHTML = `
+                <div class="location">${displayLocation}</div>
+                <div class="time-date" id="currentDateTime">Loading Date/Time...</div>
+                <div class="current-temp">${temp}°F</div>
+                <div class="weather-description">${description}</div>
+                <div class="weather-details">
+                    <div class="detail-item">
+                        <div class="detail-label">Feels Like</div>
+                        <div class="detail-value">${feelsLike}°F</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Humidity</div>
+                        <div class="detail-value">${humidity}%</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Wind</div>
+                        <div class="detail-value">${windSpeed} mph ${windDirection}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Visibility</div>
+                        <div class="detail-value">${visibility} mi</div>
+                    </div>
+                </div>
+            `;
+            // Call updateClock with the actual timezone offset
+            updateClock(timezoneOffsetSeconds); 
+        }
+
+        // Update current time and date based on timezone offset
+        function updateClock(timezoneOffsetSeconds) {
+            const currentDateTimeElement = document.getElementById('currentDateTime');
+            if (currentDateTimeElement) {
+                const now = new Date();
+                // Get UTC milliseconds
+                const utcMillis = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
+                // Calculate city's local time by adding the timezone offset
+                const cityTime = new Date(utcMillis + (timezoneOffsetSeconds * 1000));
+
+                const optionsDate = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                const optionsTime = { hour: 'numeric', minute: '2-digit', hour12: true };
+                
+                const dateString = cityTime.toLocaleDateString('en-US', optionsDate);
+                const timeString = cityTime.toLocaleTimeString('en-US', optionsTime);
+                currentDateTimeElement.textContent = `${timeString}, ${dateString}`;
+            }
+        }
+
+        function displayError(message) {
+            const weatherCard = document.getElementById('weatherCard');
+            weatherCard.innerHTML = `<div class="error">${message}</div>`;
+        }
+
+        // Get wind direction from degrees
+        function getWindDirection(degrees) {
+            const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+            return directions[Math.round(degrees / 22.5) % 16];
+        }
+
+        /*
+         * News Ticker JavaScript
+         */
+        async function fetchNewsData() {
+            // DEBUG: fetchNewsData called
+            console.log('DEBUG: fetchNewsData called.');
+            const newsScroll = document.getElementById('newsScroll');
+            newsScroll.innerHTML = `<div class="news-loading">Loading latest news...</div>`;
+
+            const rssProxies = [
+                {
+                    baseUrl: 'https://api.allorigins.win/get?url=',
+                    feeds: [
+                        'https://feeds.npr.org/1001/rss.xml',
+                        'https://feeds.bbci.co.uk/news/rss.xml',
+                        'https://rss.cnn.com/rss/edition.rss'
+                    ],
+                    name: 'AllOrigins'
+                },
+                {
+                    baseUrl: 'https://corsproxy.io/?',
+                    feeds: [
+                        'https://feeds.reuters.com/reuters/topNews',
+                        'https://feeds.npr.org/1001/rss.xml'
+                    ],
+                    name: 'CORSProxy'
+                }
+            ];
+
+            let allArticles = [];
+            let successfulFeeds = 0;
+
+            for (const proxy of rssProxies) {
+                for (const feedUrl of proxy.feeds) {
+                    try {
+                        console.log(`Fetching ${feedUrl} via ${proxy.name}...`);
+                        const proxyUrl = proxy.baseUrl + encodeURIComponent(feedUrl);
+                        const response = await fetch(proxyUrl, {
+                            method: 'GET',
+                            headers: { 'Accept': 'application/json, text/plain, */*' }
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            let xmlContent = data.contents || (typeof data === 'string' ? data : JSON.stringify(data));
+                            const articles = parseRSSContent(xmlContent, feedUrl);
+                            if (articles.length > 0) {
+                                allArticles = allArticles.concat(articles.slice(0, 15));
+                                successfulFeeds++;
+                                console.log(`Successfully parsed ${articles.length} articles from ${feedUrl}`);
+                            }
+                        } else {
+                            console.warn(`HTTP ${response.status} error for ${feedUrl} via ${proxy.name}`);
+                        }
+                    } catch (error) {
+                        console.warn(`Error fetching ${feedUrl} via ${proxy.name}:`, error.message);
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                }
+            }
+
+            console.log(`Successfully fetched from ${successfulFeeds} feeds, total articles: ${allArticles.length}`);
+
+            if (allArticles.length > 0) {
+                newsData = allArticles.filter(item => item.title && item.title.trim() !== '');
+                newsData = newsData.sort(() => 0.5 - Math.random());
+                updateNewsTicker(newsData);
+            } else {
+                console.warn('No news articles fetched from any API. Using enhanced fallback news.');
+                loadEnhancedFallbackNews();
+            }
+        }
+
+        function parseRSSContent(xmlString, feedUrl) {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+            const items = xmlDoc.querySelectorAll("item");
+            const articles = [];
+            const feedSource = getSourceFromUrl(feedUrl);
+
+            items.forEach(item => {
+                const titleElement = item.querySelector("title");
+                const linkElement = item.querySelector("link");
+                const pubDateElement = item.querySelector("pubDate");
+                const descriptionElement = item.querySelector("description");
+
+                const title = titleElement ? titleElement.textContent : 'No Title';
+                const link = linkElement ? linkElement.textContent : '#';
+                const pubDate = pubDateElement ? new Date(pubDateElement.textContent).toLocaleDateString() : 'N/A';
+                let description = descriptionElement ? descriptionElement.textContent : '';
+                description = description.replace(/(<([^>]+)>)/gi, "").substring(0, 150) + '...';
+
+                articles.push({ title, link, pubDate, description, source: feedSource });
+            });
+            return articles;
+        }
+
+        function getSourceFromUrl(url) {
+            if (url.includes('npr.org')) return 'NPR News';
+            if (url.includes('bbci.co.uk')) return 'BBC News';
+            if (url.includes('cnn.com')) return 'CNN News';
+            if (url.includes('reuters.com')) return 'Reuters';
+            return 'News Source';
+        }
+
+        function updateNewsTicker(articles) {
+            const newsScroll = document.getElementById('newsScroll');
+            if (articles.length === 0) {
+                newsScroll.innerHTML = `<div class="news-item">No news available at the moment.</div>`;
+                return;
+            }
+
+            const singleSetHtml = articles.map(item => `
+                <div class="news-item">
+                    ${item.title} - <span style="font-weight: normal; opacity: 0.8;">${item.source}</span>
+                </div>
+            `).join('');
+
+            newsScroll.innerHTML = `<div>${singleSetHtml}</div><div>${singleSetHtml}</div>`;
+
+            const contentWidth = newsScroll.scrollWidth / 2;
+            const viewportWidth = newsScroll.parentElement.offsetWidth;
+            const speed = 100;
+            const animationDuration = (contentWidth + viewportWidth) / speed;
+
+            newsScroll.style.animation = 'none';
+            newsScroll.offsetHeight;
+            newsScroll.style.animation = `scroll-left ${animationDuration}s linear infinite`; 
+            console.log('News ticker updated with live data and re-applied animation');
+        }
+
+        function loadEnhancedFallbackNews() {
+            const fallbackNews = [
+                { title: "Global leaders convene to address climate change and sustainable development goals", source: "World Summit News" },
+                { title: "Breakthrough in AI research promises advancements in personalized medicine and diagnostics", source: "Tech Innovations" },
+                { title: "Local community initiatives launch new programs to support youth education and empowerment", source: "Community Voice" },
+                { title: "International markets show resilience amidst economic challenges with innovative digital marketing and e-commerce strategies", source: "Business Today" },
+                { title: "Scientific research institutions collaborate on groundbreaking studies across multiple disciplines", source: "Science Daily" },
+                { title: "Cultural events and festivals return to communities with enhanced safety protocols and programming", source: "Arts & Culture" }
+            ];
+            
+            const shuffled = fallbackNews.sort(() => 0.5 - Math.random());
+            const singleSetHtml = shuffled.map(item => 
+                `<div class="news-item">${item.title} - <span style="font-weight: normal; opacity: 0.8;">${item.source}</span></div>`
+            ).join('');
+            
+            const newsScroll = document.getElementById('newsScroll');
+            newsScroll.innerHTML = `<div>${singleSetHtml}</div><div>${singleSetHtml}</div>`;
+            
+            const contentWidth = newsScroll.scrollWidth / 2;
+            const viewportWidth = newsScroll.parentElement.offsetWidth;
+            const speed = 100;
+            const animationDuration = (contentWidth + viewportWidth) / speed;
+
+            newsScroll.style.animation = 'none';
+            newsScroll.offsetHeight; 
+            newsScroll.style.animation = `scroll-left ${animationDuration}s linear infinite`; 
+            console.log('Enhanced fallback news ticker loaded with shuffled content');
+        }
+
+        async function transitionContent(cityConfigToDisplay) {
+            const weatherCard = document.getElementById('weatherCard');
+            const interstitialBackground = document.getElementById('interstitialBackground');
+            const interstitialImageElement = document.getElementById('interstitialImage'); // Added back interstitialImageElement
+            
+            const currentVideoBg = document.getElementById(activeVideoBackgroundId);
+            const nextVideoBgId = (activeVideoBackgroundId === 'videoBackground1') ? 'videoBackground2' : 'videoBackground1';
+            const nextVideoBg = document.getElementById(nextVideoBgId);
+
+            // Pre-set next video background to off-screen and visible for smooth transition
+            nextVideoBg.style.transition = 'none';
+            nextVideoBg.style.transform = 'translateX(-100%)';
+            nextVideoBg.classList.remove('inactive-bg');
+            nextVideoBg.classList.add('active-bg');
+            nextVideoBg.style.display = 'block';
+
+            // Phase 1: Fade out current weather card
+            console.log('Transition: Phase 1 - Fading out current weather card.');
+            weatherCard.style.transition = 'opacity 1s ease-out';
+            weatherCard.style.opacity = '0';
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Hide and reset current weather card's position after fade out
+            weatherCard.style.transition = 'none';
+            weatherCard.style.transform = 'translateX(-100%)'; 
+            weatherCard.style.display = 'none'; 
+            weatherCard.offsetHeight; // Force reflow
+
+            // Phase 2: Slide out current video AND Slide in interstitial
+            console.log('Transition: Phase 2 - Sliding out current video, sliding in interstitial.');
+            currentVideoBg.style.transition = 'transform 1s ease-in-out';
+            currentVideoBg.style.transform = 'translateX(100%)'; 
+
+            // Set interstitial image before it slides in
+            if (cityConfigToDisplay.unsplashImageUrl) {
+                interstitialImageElement.src = cityConfigToDisplay.unsplashImageUrl;
+                console.log(`Setting interstitial image for ${cityConfigToDisplay.displayName} from pre-loaded Unsplash URL.`);
+            } else {
+                interstitialImageElement.src = 'https://images.pexels.com/photos/1118873/pexels-photo-1118873.jpeg?cs=srgb&dl=pexels-jplenio-1118873.jpg&fm=jpg';
+                console.warn(`No pre-loaded Unsplash image for ${cityConfigToDisplay.displayName}. Using default Pexels interstitial.`);
+            }
+            interstitialBackground.style.display = 'block';
+            interstitialBackground.offsetHeight; // Force reflow here
+            interstitialBackground.style.transition = 'transform 1s ease-in-out';
+            interstitialBackground.style.transform = 'translateX(0%)'; 
+
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Hide and reset current video background after it slides out
+            currentVideoBg.classList.remove('active-bg');
+            currentVideoBg.classList.add('inactive-bg');
+            currentVideoBg.style.transition = 'none';
+            currentVideoBg.style.transform = 'translateX(-100%)'; 
+            currentVideoBg.style.display = 'none'; 
+
+            // Phase 3: Interstitial Hold & Update New Weather Data (weather card is still hidden)
+            console.log('Transition: Phase 3 - Interstitial hold, updating weather data. Weather card display is NONE.');
+            if (cityConfigToDisplay.weatherData) {
+                // Pass the timezone offset to displayWeatherData
+                displayWeatherData(cityConfigToDisplay.weatherData, cityConfigToDisplay.displayName, cityConfigToDisplay.state);
+                weatherCard.style.opacity = '0'; // Ensure it's transparent
+                weatherCard.style.transform = 'translateX(-100%)'; // Ensure it's off-screen left
+                weatherCard.offsetHeight; // Force reflow to apply content and transform
+            } else {
+                displayWeatherData(null, cityConfigToDisplay.displayName, cityConfigToDisplay.state); 
+                weatherCard.style.opacity = '0';
+                weatherCard.style.transform = 'translateX(0%)'; 
+                weatherCard.offsetHeight;
+            }
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+
+            // 4. Slide out interstitial AND Slide in new video
+            console.log('Transition: Phase 4 - Sliding out interstitial, sliding in new video.');
+            interstitialBackground.style.transition = 'transform 1s ease-in-out';
+            interstitialBackground.style.transform = 'translateX(100%)'; 
+
+            nextVideoBg.style.transition = 'transform 1s ease-in-out';
+            nextVideoBg.style.transform = 'translateX(0%)'; 
+
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for slide in transition
+
+            interstitialBackground.style.display = 'none';
+            interstitialBackground.offsetHeight; // Force reflow here
+            interstitialBackground.style.transform = 'translateX(-100%)'; 
+
+            activeVideoBackgroundId = nextVideoBgId; // Update active background tracker
+
+            // Now that the video background is fully slid in, attempt to play the video.
+            const newMediaElement = nextVideoBg.querySelector('video, iframe');
+            if (newMediaElement) {
+                if (newMediaElement.tagName === 'VIDEO') { // Check if it's a video element
+                    try {
+                        await newMediaElement.play();
+                        hideGifFallback(); // Only hide GIF if play is successful
+                        console.log(`Video playback initiated successfully for ${cityConfigToDisplay.displayName}.`);
+                    } catch (e) {
+                        console.error(`Video play failed for ${cityConfigToDisplay.displayName} during transition:`, e);
+                        showGifFallback(); // Show GIF if play fails
+                    }
+                } else if (newMediaElement.tagName === 'IFRAME') { // It's a YouTube iframe
+                    // YouTube iframes handle autoplay via src param, no explicit play() needed.
+                    // Just ensure GIF fallback is hidden if it loaded correctly.
+                    hideGifFallback(); 
+                    console.log(`YouTube iframe for ${cityConfigToDisplay.displayName} assumed to autoplay and is visible.`);
+                } else {
+                    console.warn(`Unknown media element type in next video background for ${cityConfigToDisplay.displayName}. Showing GIF fallback.`);
+                    showGifFallback();
+                }
+            } else {
+                console.warn(`No media element found in next video background for ${cityConfigToDisplay.displayName}. Showing GIF fallback.`);
+                showGifFallback();
+            }
+
+            // Phase 5: Make weather card visible and then fade in and slide in
+            console.log('Transition: Phase 5 - Fading in and sliding in new weather card.');
+            weatherCard.style.display = 'flex'; 
+            weatherCard.offsetHeight; 
+            
+            weatherCard.style.transition = 'opacity 1s ease-in, transform 1s ease-out'; 
+            weatherCard.style.opacity = '1';
+            weatherCard.style.transform = 'translateX(0%)'; 
+
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            weatherCard.style.transform = ''; 
+            console.log('Transition complete. New city fully displayed.');
+        }
+
+        let transitionPromise = Promise.resolve(); 
+
+        async function switchCityAndPreloadNext() {
+            await transitionPromise;
+
+            currentCityIndex = (currentCityIndex + 1) % CITIES.length;
+            const cityToDisplayConfig = CITIES[currentCityIndex];
+
+            // If we are back to the first city, increment the loop counter
+            if (currentCityIndex === 0) {
+                loopCounter++;
+                console.log(`Completed a full loop. Loop Counter: ${loopCounter}`);
+                // Check if it's time to refresh the page
+                if (loopCounter >= REFRESH_AFTER_FULL_LOOPS) {
+                    console.log(`Refreshing page after ${REFRESH_AFTER_FULL_LOOPS} loops.`);
+                    location.reload(); // Reload the entire page
+                    return; // Stop further execution for this cycle
+                }
+            }
+
+            // Start the actual transition for the city that was *pre-loaded* in the previous cycle
+            transitionPromise = transitionContent(cityToDisplayConfig); 
+            await transitionPromise; 
+
+            // After the transition for the current city is complete, trigger pre-loading for the *next* city in the sequence
+            clearTimeout(preLoadTimeoutId); // Clear any pending pre-load from previous cycle
+            const nextCityToPreloadIndex = (currentCityIndex + 1) % CITIES.length;
+            const cityToPreloadConfig = CITIES[nextCityToPreloadIndex];
+
+            preLoadTimeoutId = setTimeout(async (preloadConfig) => {
+                console.log(`INITIATING PRE-LOAD for ${preloadConfig.displayName}...`);
+                const preLoadVideoBgId = (activeVideoBackgroundId === 'videoBackground1') ? 'videoBackground2' : 'videoBackground1';
+                const preLoadVideoBg = document.getElementById(preLoadVideoBgId);
+
+                const videoSuccess = await loadVideo(preLoadVideoBg, preloadConfig.stream);
+                const weatherDataResult = await fetchWeatherDataAsync(preloadConfig.apiName, preloadConfig.state, preloadConfig.countryCode); 
+                
+                preloadConfig.weatherData = weatherDataResult;
+                preloadConfig.videoLoaded = videoSuccess;
+
+                if (weatherDataResult && weatherDataResult.fetchedCondition) {
+                    const unsplashUrl = await getUnsplashImageUrl(weatherDataResult.fetchedCondition);
+                    if (unsplashUrl) {
+                        preloadConfig.unsplashImageUrl = unsplashUrl; 
+                        console.log(`Initial PRE-LOAD: Unsplash image fetched for ${preloadConfig.displayName}.`);
+                    } else {
+                        console.warn(`Initial PRE-LOAD: Could not fetch Unsplash image for ${preloadConfig.displayName} (${weatherDataResult.fetchedCondition}).`);
+                    }
+                } else {
+                    console.warn(`Initial PRE-LOAD: No weather condition to fetch Unsplash image for ${preloadConfig.displayName}.`);
+                }
+                console.log(`PRE-LOAD for ${preloadConfig.displayName} complete.`);
+            }, 50000, cityToPreloadConfig); // Pre-load starts 50 seconds into the current city's 60-second display cycle
+        }
+
+        // New function to refresh Unsplash image for the current city
+        async function refreshCurrentCityUnsplashImage() {
+            const currentConfig = CITIES[currentCityIndex];
+            console.log(`Refreshing Unsplash image for current city: ${currentConfig.displayName}...`);
+
+            // Re-fetch weather data to get the latest condition for the image query
+            // This is important because the weather condition might change over 15 minutes.
+            const weatherDataResult = await fetchWeatherDataAsync(currentConfig.apiName, currentConfig.state, currentConfig.countryCode);
+            
+            if (weatherDataResult && weatherDataResult.fetchedCondition) {
+                const unsplashUrl = await getUnsplashImageUrl(weatherDataResult.fetchedCondition);
+                if (unsplashUrl) {
+                    currentConfig.unsplashImageUrl = unsplashUrl;
+                    console.log(`Unsplash image for ${currentConfig.displayName} refreshed.`);
+                } else {
+                    console.warn(`Could not refresh Unsplash image for ${currentConfig.displayName} (${weatherDataResult.fetchedCondition}). Using default.`);
+                }
+            } else {
+                console.warn(`No weather condition available to refresh Unsplash image for ${currentConfig.displayName}.`);
+            }
+        }
+
+
+        // Initial load function to set up the first city's data and video
+        async function initialLoad() {
+            // DEBUG: initialLoad function started
+            console.log("DEBUG: initialLoad function started.");
+
+            const weatherCard = document.getElementById('weatherCard');
+            const initialVideoBg = document.getElementById(activeVideoBackgroundId);
+            const interstitialImageElement = document.getElementById('interstitialImage');
+
+            weatherCard.style.opacity = '0';
+            weatherCard.style.transform = 'translateX(0%)'; 
+            weatherCard.style.display = 'block'; 
+
+            console.log(`Initial load: Fetching data for ${CITIES[0].displayName}.`);
+            // Load video. We now rely on explicit play() after animations.
+            const videoLoadedSuccessfully = await loadVideo(initialVideoBg, CITIES[0].stream);
+            const initialWeatherData = await fetchWeatherDataAsync(CITIES[0].apiName, CITIES[0].state, CITIES[0].countryCode); 
+
+            if (initialWeatherData && initialWeatherData.fetchedCondition) {
+                const unsplashUrl = await getUnsplashImageUrl(initialWeatherData.fetchedCondition);
+                if (unsplashUrl) {
+                    interstitialImageElement.src = unsplashUrl;
+                    CITIES[0].unsplashImageUrl = unsplashUrl; // Store URL for this city
+                    console.log(`Initial Unsplash image set for ${CITIES[0].displayName}.`);
+                } else {
+                    console.warn(`Could not fetch Unsplash image for ${CITIES[0].displayName} (${initialWeatherData.fetchedCondition}). Using default.`);
+                }
+            } else {
+                console.warn(`No weather condition to fetch Unsplash image for ${CITIES[0].displayName}. Using default.`);
+            }
+
+            // Only proceed with displaying if weather data is available
+            if (initialWeatherData) {
+                 console.log('Initial weather data loaded. Attempting video playback and display.');
+                 displayWeatherData(initialWeatherData, CITIES[0].displayName, CITIES[0].state);
+                 CITIES[0].weatherData = initialWeatherData; // Store data for this city
+                 CITIES[0].videoLoaded = videoLoadedSuccessfully; // Store video load status
+                 
+                 weatherCard.style.transition = 'opacity 1s ease-in';
+                 weatherCard.style.opacity = '1';
+                 await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for weather card to fade in
+                 
+                 weatherCard.style.transform = '';
+
+                 // Explicitly play the initial video after the weather card has faded in AND video element is ready
+                 const initialMediaElement = initialVideoBg.querySelector('video, iframe');
+                 if (initialMediaElement && videoLoadedSuccessfully) { // Ensure video element exists and loaded successfully
+                    if (initialMediaElement.tagName === 'VIDEO') { // It's a video element
+                        try {
+                            await initialMediaElement.play();
+                            hideGifFallback(); // Only hide GIF if initial play is successful
+                            console.log('Initial video playback started successfully.');
+                        } catch (e) {
+                            console.error('Initial video play failed (autoplay policy or other issue):', e);
+                            showGifFallback(); // Show GIF if initial play fails
+                        }
+                    } else if (initialMediaElement.tagName === 'IFRAME') { // It's a YouTube iframe
+                        // YouTube iframes handle autoplay via src param, no explicit play() needed.
+                        // Just ensure GIF fallback is hidden if it loaded correctly.
+                        hideGifFallback(); 
+                        console.log('Initial YouTube iframe assumed to autoplay and is visible.');
+                    } else {
+                        console.warn('Unknown initial media element type. Showing GIF fallback.');
+                        showGifFallback();
+                    }
+                 } else {
+                     console.warn('No valid media element found or initial video load failed. Showing GIF fallback.');
+                     showGifFallback(); // Show GIF if no media element or load failed
+                 }
+
+            } else {
+                console.error('Initial load failed for weather data. Application might not function as expected. Showing GIF fallback.');
+                displayWeatherData(null, CITIES[0].displayName, CITIES[0].state); // Display error state for weather
+                weatherCard.style.opacity = '1'; // Make sure the error card is visible
+                showGifFallback(); // Always show GIF fallback if weather data fails
+            }
+           
+            fetchNewsData(); 
+            setInterval(() => {
+                const currentCityConfig = CITIES[currentCityIndex];
+                const currentCityWeatherData = currentCityConfig.weatherData;
+                const timezoneOffset = currentCityWeatherData ? currentCityWeatherData.timezone : 0;
+                updateClock(timezoneOffset);
+            }, 1000); 
+
+            setInterval(switchCityAndPreloadNext, 60000); 
+            setInterval(refreshCurrentCityUnsplashImage, 15 * 60 * 1000); // Every 15 minutes, refresh the interstitial image for the current city
+
+            // Trigger the initial pre-load for the *second* city (CITIES[1])
+            const initialNextCityToPreloadIndex = (currentCityIndex + 1) % CITIES.length;
+            const initialCityToPreloadConfig = CITIES[initialNextCityToPreloadIndex];
+
+            preLoadTimeoutId = setTimeout(async (preloadConfig) => {
+                console.log(`INITIATING PRE-LOAD for ${preloadConfig.displayName}...`);
+                const preLoadVideoBgId = (activeVideoBackgroundId === 'videoBackground1') ? 'videoBackground2' : 'videoBackground1';
+                const preLoadVideoBg = document.getElementById(preLoadVideoBgId);
+
+                const videoSuccess = await loadVideo(preLoadVideoBg, preloadConfig.stream);
+                const weatherDataResult = await fetchWeatherDataAsync(preloadConfig.apiName, preloadConfig.state, preloadConfig.countryCode); 
+                
+                preloadConfig.weatherData = weatherDataResult;
+                preloadConfig.videoLoaded = videoSuccess;
+
+                if (weatherDataResult && weatherDataResult.fetchedCondition) {
+                    const unsplashUrl = await getUnsplashImageUrl(weatherDataResult.fetchedCondition);
+                    if (unsplashUrl) {
+                        preloadConfig.unsplashImageUrl = unsplashUrl; 
+                        console.log(`Initial PRE-LOAD: Unsplash image fetched for ${preloadConfig.displayName}.`);
+                    } else {
+                        console.warn(`Initial PRE-LOAD: Could not fetch Unsplash image for ${preloadConfig.displayName} (${weatherDataResult.fetchedCondition}).`);
+                    }
+                } else {
+                    console.warn(`Initial PRE-LOAD: No weather condition to fetch Unsplash image for ${preloadConfig.displayName}.`);
+                }
+                console.log(`PRE-LOAD for ${preloadConfig.displayName} complete.`);
+            }, 50000, initialCityToPreloadConfig); 
+            
+            setInterval(fetchNewsData, 1800000); 
+
+        }
+
+        document.addEventListener('DOMContentLoaded', initialLoad);
+        
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                const activeMediaElement = document.getElementById(activeVideoBackgroundId).querySelector('video, iframe');
+                // Only attempt to play video if it's currently active, a VIDEO element, and capable of playing, and paused
+                if (activeMediaElement && activeMediaElement.tagName === 'VIDEO' && typeof activeMediaElement.play === 'function' && activeMediaElement.paused) {
+                    activeMediaElement.play().catch(e => console.log('Video resume failed on visibility change:', e));
+                }
+            } else {
+                // Also pause the active video when tab is hidden
+                const activeMediaElement = document.getElementById(activeVideoBackgroundId).querySelector('video, iframe');
+                // Only pause if it's a VIDEO element and currently playing
+                if (activeMediaElement && activeMediaElement.tagName === 'VIDEO' && typeof activeMediaElement.pause === 'function' && !activeMediaElement.paused) {
+                    activeMediaElement.pause();
+                    console.log('Active video paused due to tab hidden.');
+                }
+            }
+        });
