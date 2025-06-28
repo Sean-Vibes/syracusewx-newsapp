@@ -568,6 +568,7 @@
         // Initialize video stream (or embed) for a specific video background div
         function loadVideo(videoBackgroundDiv, streamUrl) {
             return new Promise((resolve) => {
+                console.log(`DEBUG: loadVideo called for ${streamUrl}`); // New log
                 clearTimeout(videoLoadTimeout); 
                 const mediaContainer = videoBackgroundDiv.querySelector('.media-container');
                 mediaContainer.innerHTML = ''; // Clear previous media
@@ -699,6 +700,7 @@
         // Function to fetch image from Unsplash
         async function getUnsplashImageUrl(query) {
             try {
+                console.log(`DEBUG: Fetching Unsplash image for query: ${query}`); // New log
                 const url = `https://api.unsplash.com/photos/random?query=${encodeURIComponent(query)}&client_id=${UNSPLASH_ACCESS_KEY}`;
                 const response = await fetch(url);
                 if (!response.ok) {
@@ -732,6 +734,7 @@
             const url = `https://api.openweathermap.org/data/2.5/weather?q=${queryParam}&units=imperial&appid=${API_KEY}`;
 
             try {
+                console.log(`DEBUG: Fetching weather from URL: ${url}`); // New log
                 const response = await fetch(url);
                 if (!response.ok) {
                     throw new Error(`Weather data not found for ${apiCityName}, ${state}. Status: ${response.status}`);
@@ -749,6 +752,7 @@
 
         // Display weather data
         function displayWeatherData(data, cityDisplayName, state) {
+            console.log(`DEBUG: displayWeatherData called for ${cityDisplayName}. Data present: ${!!data}`); // New log
             const weatherCard = document.getElementById('weatherCard');
             // For non-US cities like Sydney, we don't display a state.
             // For US cities, we display the state.
@@ -871,7 +875,7 @@
             for (const proxy of rssProxies) {
                 for (const feedUrl of proxy.feeds) {
                     try {
-                        console.log(`Fetching ${feedUrl} via ${proxy.name}...`);
+                        console.log(`DEBUG: Fetching ${feedUrl} via ${proxy.name}...`); // New log
                         const proxyUrl = proxy.baseUrl + encodeURIComponent(feedUrl);
                         const response = await fetch(proxyUrl, {
                             method: 'GET',
@@ -923,7 +927,7 @@
                 const descriptionElement = item.querySelector("description");
 
                 const title = titleElement ? titleElement.textContent : 'No Title';
-                const link = linkElement ? linkElement.textContent : '#';
+                const link = linkElement ? linkLement.textContent : '#';
                 const pubDate = pubDateElement ? new Date(pubDateElement.textContent).toLocaleDateString() : 'N/A';
                 let description = descriptionElement ? descriptionElement.textContent : '';
                 description = description.replace(/(<([^>]+)>)/gi, "").substring(0, 150) + '...';
@@ -999,7 +1003,7 @@
         async function transitionContent(cityConfigToDisplay) {
             const weatherCard = document.getElementById('weatherCard');
             const interstitialBackground = document.getElementById('interstitialBackground');
-            const interstitialImageElement = document.getElementById('interstitialImage'); // Added back interstitialImageElement
+            const interstitialImageElement = document.getElementById('interstitialImage'); 
             
             const currentVideoBg = document.getElementById(activeVideoBackgroundId);
             const nextVideoBgId = (activeVideoBackgroundId === 'videoBackground1') ? 'videoBackground2' : 'videoBackground1';
@@ -1217,12 +1221,19 @@
             weatherCard.style.display = 'block'; 
 
             console.log(`Initial load: Fetching data for ${CITIES[0].displayName}.`);
-            // Load video. We now rely on explicit play() after animations.
+            console.log(`DEBUG: Calling loadVideo for ${CITIES[0].stream}`); // New log
             const videoLoadedSuccessfully = await loadVideo(initialVideoBg, CITIES[0].stream);
+            console.log(`DEBUG: loadVideo resolved with: ${videoLoadedSuccessfully}`); // New log
+
+            console.log(`DEBUG: Calling fetchWeatherDataAsync for ${CITIES[0].apiName}`); // New log
             const initialWeatherData = await fetchWeatherDataAsync(CITIES[0].apiName, CITIES[0].state, CITIES[0].countryCode); 
+            console.log(`DEBUG: fetchWeatherDataAsync resolved with data: ${!!initialWeatherData}`); // New log
+
 
             if (initialWeatherData && initialWeatherData.fetchedCondition) {
+                console.log(`DEBUG: Calling getUnsplashImageUrl for ${initialWeatherData.fetchedCondition}`); // New log
                 const unsplashUrl = await getUnsplashImageUrl(initialWeatherData.fetchedCondition);
+                console.log(`DEBUG: getUnsplashImageUrl resolved with URL: ${unsplashUrl}`); // New log
                 if (unsplashUrl) {
                     interstitialImageElement.src = unsplashUrl;
                     CITIES[0].unsplashImageUrl = unsplashUrl; // Store URL for this city
