@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Weather Live View</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
         * {
             margin: 0;
             padding: 0;
@@ -12,10 +15,11 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', sans-serif;
             height: 100vh;
             overflow: hidden;
             position: relative;
+            background-color: #1a1a2e; /* Fallback background */
         }
 
         .video-background {
@@ -73,6 +77,7 @@
             display: none; /* Hidden by default */
             transform: translateX(-100%); /* Start off-screen left */
             transition: transform 1s ease-in-out;
+            background-color: #333; /* Fallback solid color */
         }
 
         .interstitial-background img {
@@ -167,11 +172,18 @@
             line-height: 1;
         }
 
-        .time-date {
-            font-size: 1.6rem;
-            margin-bottom: 10px; /* Tightened spacing */
-            opacity: 0.9;
-            font-weight: 500;
+        .current-date {
+            font-size: 1.3rem; /* Slightly smaller than time */
+            margin-bottom: 5px;
+            opacity: 0.8;
+            font-weight: 400;
+        }
+
+        .current-time {
+            font-size: 1.9rem; /* Slightly larger for emphasis */
+            margin-bottom: 10px; /* Space before temperature */
+            opacity: 0.95;
+            font-weight: 600;
         }
 
         .weather-description {
@@ -235,7 +247,7 @@
             background: linear-gradient(90deg, #ff9a9e 0%, #fecfef 100%);
         }
 
-        .detail-item:nth-child(2)::before {
+        .detail-item:nth-child(2):::before {
             background: linear-gradient(90deg, #a8edea 0%, #fed6e3 100%);
         }
 
@@ -264,7 +276,7 @@
             text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
         }
 
-        /* News Ticker Styles from news_ticker_code3.txt */
+        /* News Ticker Styles */
         .news-ticker {
             position: fixed;
             bottom: 0;
@@ -288,7 +300,7 @@
             display: flex;
             align-items: center;
             font-weight: bold;
-            font-size: 1.1rem;
+            font-size: 1.8rem; /* Increased font size for NEWS label */
             text-transform: uppercase;
             letter-spacing: 1px;
             min-width: 140px;
@@ -374,8 +386,11 @@
             .current-temp {
                 font-size: 5rem;
             }
-            .time-date {
-                font-size: 1.4rem;
+            .current-date {
+                font-size: 1.1rem;
+            }
+            .current-time {
+                font-size: 1.6rem;
             }
             .weather-description {
                 font-size: 1.6rem;
@@ -394,7 +409,7 @@
             .detail-value {
                 font-size: 1.6rem;
             }
-            /* News Ticker Media Queries from news_ticker_code3.txt */
+            /* News Ticker Media Queries */
             .news-ticker {
                 height: 70px;
             }
@@ -405,26 +420,22 @@
             }
 
             .news-label {
-                font-size: 1rem;
+                font-size: 1.5rem; /* Adjusted for mobile */
                 min-width: 120px;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Two video backgrounds for seamless transitions -->
     <div class="video-background active-bg" id="videoBackground1">
         <div class="media-container" id="mediaContainer1">
-            <!-- Video or iframe will be dynamically placed here -->
-        </div>
+            </div>
     </div>
     <div class="video-background inactive-bg" id="videoBackground2">
         <div class="media-container" id="mediaContainer2">
-            <!-- Video or iframe will be dynamically placed here -->
-        </div>
+            </div>
     </div>
 
-    <!-- Interstitial Image Background -->
     <div class="interstitial-background" id="interstitialBackground">
         <img id="interstitialImage" src="https://images.pexels.com/photos/1118873/pexels-photo-1118873.jpeg?cs=srgb&dl=pexels-jplenio-1118873.jpg&fm=jpg" alt="Transition Image - Weather and Landscape" onerror="this.onerror=null; this.src='https://placehold.co/1920x1080/000000/FFFFFF?text=Image+Unavailable';" >
     </div>
@@ -438,12 +449,10 @@
         </div>
     </div>
 
-    <!-- News Ticker HTML from news_ticker_code3.txt -->
     <div class="news-ticker">
-        <div class="news-label">News</div>
+        <div class="news-label">NEWS</div>
         <div class="news-content">
             <div class="news-scroll" id="newsScroll">
-                <!-- News items will be populated and duplicated here by JavaScript for seamless scrolling -->
                 <div class="news-loading">Loading latest news...</div>
             </div>
         </div>
@@ -454,8 +463,7 @@
         // API key for OpenWeatherMap (replace with your own if you have one)
         const API_KEY = '1cf8937cc9682ba717da9c52c975283e';
         
-        // Unsplash Access Key for dynamic interstitial images
-        const UNSPLASH_ACCESS_KEY = 'xaOd97e-47tGGn4whKKYaDD_JJNoqGQnKJlVRR4Iurg';
+        // Removed Unsplash Access Key
 
         // Define the city configurations
         const CITIES = [
@@ -464,43 +472,56 @@
                 apiName: 'Syracuse',
                 state: 'NY', 
                 countryCode: 'US', 
-                stream: 'https://tower.armorycam.com/stream/armorystream.m3u8'
+                stream: 'https://tower.armorycam.com/stream/armorystream.m3u8',
+                fallbackImageUrl: 'https://www.syracuse.com/resizer/XEzJNnUyf1v3P8uP0NtUDhnCd-o=/arc-anglerfish-arc2-prod-advancelocal/public/ASOGP6SJG5AAVPB5KEFSAJHNT4.jpg' 
             },
             {
                 displayName: 'Myrtle Beach', 
                 apiName: 'Myrtle Beach',     
                 state: 'SC',
                 countryCode: 'US',
-                stream: 'https://www.youtube.com/embed/MAPDh0XDtZs'
+                stream: 'https://www.youtube.com/embed/MAPDh0XDtZs',
+                fallbackImageUrl: 'https://www.myrtlebeach.com/wp-content/uploads/2016/11/Homepage-Main.jpg' 
             },
             {
                 displayName: 'Toronto',
                 apiName: 'Toronto',
                 state: 'ON', 
                 countryCode: 'CA', 
-                stream: 'https://www.youtube.com/embed/-Js36EsiUgA'
+                stream: 'https://www.youtube.com/embed/-Js36EsiUgA',
+                fallbackImageUrl: 'https://www.nomadicmatt.com/wp-content/uploads/2018/01/torontoguide.jpg' 
             },
             {
                 displayName: 'Grand Forks',
                 apiName: 'Grand Forks',
                 state: 'ND',
                 countryCode: 'US',
-                stream: 'https://www.youtube.com/embed/mpcvRHLGBRw'
+                stream: 'https://www.youtube.com/embed/mpcvRHLGBRw',
+                fallbackImageUrl: 'https://media.discordapp.net/attachments/1275781545675722845/1384537200468819978/unnamed-e1623966048345-jpg.png?ex=68629c40&is=68614ac0&hm=8d6ce680c571b2cfb21eb59f75dc1221733003e63c51aaaf73ff4c4d3526c9d4&=&format=webp&quality=lossless' 
             }
         ];
 
         let currentCityIndex = 0;
         let activeVideoBackgroundId = 'videoBackground1'; 
 
-        const NEWS_API_KEY = '28da12c05d7d45efa1594b14339070c0';
-        const RSS_API_KEY = 'sJGWtKgYEYFB6VzT7FNgNYxhPxOGfbVhsP8JaKTd';
+        // RSS2JSON API Key 
+        const RSS_API_KEY = 'ngd011e5pl0bwl0ejgfc0eu7126l19yaenu4iewv'; 
+        
+        // RSS Feed Sources (from USA News Firehose.xml, excluding the problematic Reuters feed)
+        const RSS_SOURCES = [
+            "http://feeds.foxnews.com/foxnews/national",
+            "http://rss.cnn.com/rss/edition_us.rss"
+        ];
+
         const FALLBACK_GIF = 'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExeDdra200dG45YW9qYTN5YW9qYTNyaHE0ZjNrZDR0and2OWF1NGs2ajM5enRnMiZlcD12MV9pbnRlcm5sYWZfYnlfaWQmY3Q9Zw/m2hjlbNbSRGy4/giphy.gif';
         
-        let weatherData = {};
+        // Initialize weatherData with a default timezone to prevent errors before first fetch
+        let weatherData = { timezone: 0 }; 
         let newsData = [];
         let videoLoadTimeout;
         let hlsInstance = null; 
         let preLoadTimeoutId = null; 
+        let cityRotationInterval; // Variable to hold the interval ID
 
         // Function to show GIF fallback, adapting for two video backgrounds
         function showGifFallback() {
@@ -529,7 +550,7 @@
                     console.log(`Media load timeout for ${streamUrl}. Initiating GIF fallback.`);
                     showGifFallback();
                     resolve(false); 
-                }, 7000); 
+                }, 7000); // 7-second timeout for video load
 
                 if (streamUrl.includes('youtube.com/embed/')) {
                     // YouTube Embed
@@ -551,7 +572,7 @@
                     iframe.onload = () => {
                         console.log(`YouTube iframe loaded for: ${streamUrl}`);
                         clearTimeout(currentVideoLoadTimeout);
-                        hideGifFallback();
+                        hideGifFallback(); // Hide GIF if it was shown
                         resolve(true);
                     };
                     iframe.onerror = () => {
@@ -575,7 +596,13 @@
 
                     mediaContainer.appendChild(videoElement);
 
-                    if (hlsInstance && hlsInstance.media === videoElement) {
+                    // If an Hls instance exists and is attached to the *other* video element, destroy it
+                    // Or if current hlsInstance is still playing in the target video element, destroy it for a clean reload
+                    if (hlsInstance && hlsInstance.media && hlsInstance.media !== videoElement) {
+                        hlsInstance.destroy();
+                        hlsInstance = null;
+                    } else if (hlsInstance && hlsInstance.media === videoElement) {
+                        // If it's the same video element, destroy and re-create for a fresh load
                         hlsInstance.destroy();
                         hlsInstance = null;
                     }
@@ -603,6 +630,10 @@
                             if (data.fatal) {
                                 clearTimeout(currentVideoLoadTimeout); 
                                 showGifFallback(); 
+                                if (hlsInstance) {
+                                    hlsInstance.destroy(); // Ensure Hls instance is destroyed on fatal error
+                                    hlsInstance = null;
+                                }
                                 hlsInstance.off(Hls.Events.ERROR, onHlsError); 
                                 resolve(false); 
                             }
@@ -680,38 +711,20 @@
             });
         }
 
-        // Function to fetch image from Unsplash
-        async function getUnsplashImageUrl(query) {
-            try {
-                const url = `https://api.unsplash.com/photos/random?query=${encodeURIComponent(query)}&client_id=${UNSPLASH_ACCESS_KEY}`;
-                const response = await fetch(url);
-                if (!response.ok) {
-                    console.warn(`Unsplash API call failed for query "${query}". Status: ${response.status}`);
-                    return null;
-                }
-                const data = await response.json();
-                if (data && data.urls && data.urls.regular) {
-                    return data.urls.regular;
-                } else {
-                    console.warn(`No regular image URL found in Unsplash response for query "${query}".`);
-                    return null;
-                }
-            } catch (error) {
-                console.error(`Error fetching Unsplash image for query "${query}":`, error);
-                return null;
-            }
-        }
+        // Removed getUnsplashImageUrl function as it's no longer used.
 
         // Fetch weather data from OpenWeatherMap
         async function fetchWeatherDataAsync(apiCityName, state, countryCode) { 
-            console.log(`Fetching weather data for ${apiCityName}, ${state}, ${countryCode}...`);
+            console.log(`Fetching weather data for ${apiCityName}, ${state ? state + ', ' : ''}${countryCode}...`);
             let queryParam = `${apiCityName}`;
-            if (state && countryCode === 'US') { // Include state only for US cities
-                queryParam += `,${state}`;
-            }
-            if (countryCode) { // Always include country code if available
+            // OpenWeatherMap usually works better with just city,countryCode for non-US
+            // For US, state code can help disambiguate
+            if (countryCode === 'US' && state) { 
+                queryParam += `,${state},${countryCode}`;
+            } else if (countryCode) {
                 queryParam += `,${countryCode}`;
             }
+
             const url = `https://api.openweathermap.org/data/2.5/weather?q=${queryParam}&units=imperial&appid=${API_KEY}`;
 
             try {
@@ -720,7 +733,7 @@
                     throw new Error(`Weather data not found for ${apiCityName}, ${state}. Status: ${response.status}`);
                 }
                 weatherData = await response.json(); 
-                // Store the main weather condition for Unsplash query
+                // Store the main weather condition (no longer used for Unsplash query directly)
                 weatherData.fetchedCondition = weatherData.weather[0]?.main || weatherData.weather[0]?.description || 'weather';
                 console.log('Weather data fetched:', weatherData);
                 return weatherData; 
@@ -740,11 +753,15 @@
                 weatherCard.innerHTML = `
                     <div class="location">${displayLocation}</div>
                     <div class="error" style="margin-top: 20px;">Weather data currently unavailable.</div>
-                    <div class="time-date" id="currentDateTime">Loading Date/Time...</div>
+                    <div class="current-date" id="currentDate"></div>
+                    <div class="current-time" id="currentTime"></div>
                 `;
-                updateClock();
+                updateClock(); // Update clock even on error to show browser time
                 return; 
             }
+
+            // Update global weatherData object (including timezone)
+            weatherData = data; 
 
             const temp = Math.round(data.main.temp);
             const feelsLike = Math.round(data.main.feels_like);
@@ -752,11 +769,12 @@
             const humidity = data.main.humidity || 'N/A';
             const windSpeed = Math.round(data.wind.speed) || 'N/A';
             const windDirection = data.wind.deg ? getWindDirection(data.wind.deg) : 'N/A';
-            const visibility = data.visibility ? (data.visibility / 1609.34).toFixed(1) : 'N/A';
+            const visibility = data.visibility ? (data.visibility / 1609.34).toFixed(1) : 'N/A'; // Convert meters to miles
 
             weatherCard.innerHTML = `
                 <div class="location">${displayLocation}</div>
-                <div class="time-date" id="currentDateTime">Loading Date/Time...</div>
+                <div class="current-date" id="currentDate"></div>
+                <div class="current-time" id="currentTime"></div>
                 <div class="current-temp">${temp}°F</div>
                 <div class="weather-description">${description}</div>
                 <div class="weather-details">
@@ -781,433 +799,218 @@
             updateClock(); 
         }
 
-        // Update current time and date
+        // Helper function to get wind direction from degrees
+        function getWindDirection(deg) {
+            const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+            const index = Math.round((deg % 360) / 45);
+            return directions[index % 8];
+        }
+
+        // Update current time and date based on city's timezone
         function updateClock() {
-            const currentDateTimeElement = document.getElementById('currentDateTime');
-            if (currentDateTimeElement) {
+            const currentDateElement = document.getElementById('currentDate');
+            const currentTimeElement = document.getElementById('currentTime');
+
+            // Only proceed if elements exist and weatherData has a valid timezone
+            if (!currentDateElement || !currentTimeElement || weatherData.timezone === undefined || weatherData.timezone === null) {
+                // Fallback to local browser time if city timezone is not available
                 const now = new Date();
-                const optionsDate = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-                const optionsTime = { hour: 'numeric', minute: '2-digit', hour12: true };
-                const dateString = now.toLocaleDateString('en-US', optionsDate);
-                const timeString = now.toLocaleTimeString('en-US', optionsTime);
-                currentDateTimeElement.textContent = `${timeString}, ${dateString}`;
-            }
-        }
-
-        function displayError(message) {
-            const weatherCard = document.getElementById('weatherCard');
-            weatherCard.innerHTML = `<div class="error">${message}</div>`;
-        }
-
-        // Get wind direction from degrees
-        function getWindDirection(degrees) {
-            const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
-            return directions[Math.round(degrees / 22.5) % 16];
-        }
-
-        /*
-         * News Ticker JavaScript
-         */
-        async function fetchNewsData() {
-            console.log('Fetching news data...');
-            const newsScroll = document.getElementById('newsScroll');
-            newsScroll.innerHTML = `<div class="news-loading">Loading latest news...</div>`;
-
-            const rssProxies = [
-                {
-                    baseUrl: 'https://api.allorigins.win/get?url=',
-                    feeds: [
-                        'https://feeds.npr.org/1001/rss.xml',
-                        'https://feeds.bbci.co.uk/news/rss.xml',
-                        'https://rss.cnn.com/rss/edition.rss'
-                    ],
-                    name: 'AllOrigins'
-                },
-                {
-                    baseUrl: 'https://corsproxy.io/?',
-                    feeds: [
-                        'https://feeds.reuters.com/reuters/topNews',
-                        'https://feeds.npr.org/1001/rss.xml'
-                    ],
-                    name: 'CORSProxy'
-                }
-            ];
-
-            let allArticles = [];
-            let successfulFeeds = 0;
-
-            for (const proxy of rssProxies) {
-                for (const feedUrl of proxy.feeds) {
-                    try {
-                        console.log(`Fetching ${feedUrl} via ${proxy.name}...`);
-                        const proxyUrl = proxy.baseUrl + encodeURIComponent(feedUrl);
-                        const response = await fetch(proxyUrl, {
-                            method: 'GET',
-                            headers: { 'Accept': 'application/json, text/plain, */*' }
-                        });
-
-                        if (response.ok) {
-                            const data = await response.json();
-                            let xmlContent = data.contents || (typeof data === 'string' ? data : JSON.stringify(data));
-                            const articles = parseRSSContent(xmlContent, feedUrl);
-                            if (articles.length > 0) {
-                                allArticles = allArticles.concat(articles.slice(0, 15));
-                                successfulFeeds++;
-                                console.log(`Successfully parsed ${articles.length} articles from ${feedUrl}`);
-                            }
-                        } else {
-                            console.warn(`HTTP ${response.status} error for ${feedUrl} via ${proxy.name}`);
-                        }
-                    } catch (error) {
-                        console.warn(`Error fetching ${feedUrl} via ${proxy.name}:`, error.message);
-                    }
-                    await new Promise(resolve => setTimeout(resolve, 300));
-                }
-            }
-
-            console.log(`Successfully fetched from ${successfulFeeds} feeds, total articles: ${allArticles.length}`);
-
-            if (allArticles.length > 0) {
-                newsData = allArticles.filter(item => item.title && item.title.trim() !== '');
-                newsData = newsData.sort(() => 0.5 - Math.random());
-                updateNewsTicker(newsData);
-            } else {
-                console.warn('No news articles fetched from any API. Using enhanced fallback news.');
-                loadEnhancedFallbackNews();
-            }
-        }
-
-        function parseRSSContent(xmlString, feedUrl) {
-            const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(xmlString, "text/xml");
-            const items = xmlDoc.querySelectorAll("item");
-            const articles = [];
-            const feedSource = getSourceFromUrl(feedUrl);
-
-            items.forEach(item => {
-                const titleElement = item.querySelector("title");
-                const linkElement = item.querySelector("link");
-                const pubDateElement = item.querySelector("pubDate");
-                const descriptionElement = item.querySelector("description");
-
-                const title = titleElement ? titleElement.textContent : 'No Title';
-                const link = linkElement ? linkElement.textContent : '#';
-                const pubDate = pubDateElement ? new Date(pubDateElement.textContent).toLocaleDateString() : 'N/A';
-                let description = descriptionElement ? descriptionElement.textContent : '';
-                description = description.replace(/(<([^>]+)>)/gi, "").substring(0, 150) + '...';
-
-                articles.push({ title, link, pubDate, description, source: feedSource });
-            });
-            return articles;
-        }
-
-        function getSourceFromUrl(url) {
-            if (url.includes('npr.org')) return 'NPR News';
-            if (url.includes('bbci.co.uk')) return 'BBC News';
-            if (url.includes('cnn.com')) return 'CNN News';
-            if (url.includes('reuters.com')) return 'Reuters';
-            return 'News Source';
-        }
-
-        function updateNewsTicker(articles) {
-            const newsScroll = document.getElementById('newsScroll');
-            if (articles.length === 0) {
-                newsScroll.innerHTML = `<div class="news-item">No news available at the moment.</div>`;
+                currentDateElement.textContent = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                currentTimeElement.textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
                 return;
             }
 
-            const singleSetHtml = articles.map(item => `
-                <div class="news-item">
-                    ${item.title} - <span style="font-weight: normal; opacity: 0.8;">${item.source}</span>
-                </div>
-            `).join('');
+            const now = new Date(); // Current time in local browser timezone
+            const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000); // Convert to UTC milliseconds
+            const cityLocalTimeMs = utcTime + (weatherData.timezone * 1000); // Apply city's UTC offset
 
-            newsScroll.innerHTML = `<div>${singleSetHtml}</div><div>${singleSetHtml}</div>`;
+            const cityDate = new Date(cityLocalTimeMs);
 
-            const contentWidth = newsScroll.scrollWidth / 2;
-            const viewportWidth = newsScroll.parentElement.offsetWidth;
-            const speed = 100;
-            const animationDuration = (contentWidth + viewportWidth) / speed;
+            // Date format: Weekday, Month Day, Year
+            const optionsDate = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const formattedDate = cityDate.toLocaleDateString('en-US', optionsDate);
+            currentDateElement.textContent = formattedDate;
 
-            newsScroll.style.animation = 'none';
-            newsScroll.offsetHeight;
-            newsScroll.style.animation = `scroll-left ${animationDuration}s linear infinite`; 
-            console.log('News ticker updated with live data and re-applied animation');
+            // Time format: hour:minute only, AM/PM
+            const optionsTime = { hour: '2-digit', minute: '2-digit', hour12: true };
+            const formattedTime = cityDate.toLocaleTimeString('en-US', optionsTime);
+            currentTimeElement.textContent = formattedTime;
         }
 
-        function loadEnhancedFallbackNews() {
-            const fallbackNews = [
-                { title: "Global leaders convene to address climate change and sustainable development goals", source: "World Summit News" },
-                { title: "Breakthrough in AI research promises advancements in personalized medicine and diagnostics", source: "Tech Innovations" },
-                { title: "Local community initiatives launch new programs to support youth education and empowerment", source: "Community Voice" },
-                { title: "International markets show resilience amidst economic challenges with innovative digital marketing and e-commerce strategies", source: "Business Today" },
-                { title: "Scientific research institutions collaborate on groundbreaking studies across multiple disciplines", source: "Science Daily" },
-                { title: "Cultural events and festivals return to communities with enhanced safety protocols and programming", source: "Arts & Culture" }
-            ];
-            
-            const shuffled = fallbackNews.sort(() => 0.5 - Math.random());
-            const singleSetHtml = shuffled.map(item => 
-                `<div class="news-item">${item.title} - <span style="font-weight: normal; opacity: 0.8;">${item.source}</span></div>`
-            ).join('');
-            
+        // Call updateClock every second
+        setInterval(updateClock, 1000);
+
+        // Fetch news data from RSS sources using rss2json.com proxy
+        async function fetchNewsData() {
+            console.log("Attempting to fetch news from RSS feeds via rss2json.com proxy...");
+            let allArticles = [];
+
+            for (const rssUrl of RSS_SOURCES) {
+                // Construct the RSS2JSON API URL with your provided RSS2JSON API key
+                // and the current RSS feed URL.
+                const fullProxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}&api_key=${RSS_API_KEY}`;
+                try {
+                    const response = await fetch(fullProxyUrl);
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(`Failed to fetch RSS from ${rssUrl} via proxy: ${response.status} ${response.statusText} - ${errorText}`);
+                    }
+                    const data = await response.json();
+                    
+                    // Check if the API returned an error, specifically for rss2json.com errors
+                    if (data.status === 'error') {
+                        throw new Error(`RSS2JSON API error for ${rssUrl}: ${data.message}`);
+                    }
+
+                    if (data && data.items) {
+                        const sourceArticles = data.items
+                            .filter(item => item.title && item.description)
+                            .map(item => ({
+                                title: item.title.replace(/<[^>]*>?/gm, ''), // Remove HTML tags from title
+                                description: item.description.replace(/<[^>]*>?/gm, '') // Remove HTML tags from description
+                            }));
+                        allArticles = allArticles.concat(sourceArticles);
+                        console.log(`Fetched ${sourceArticles.length} articles from ${rssUrl} via proxy`);
+                    } else {
+                        console.warn(`No items found or unexpected response format in RSS feed: ${rssUrl} via proxy`);
+                    }
+                } catch (error) {
+                    console.error(`Error fetching RSS feed ${rssUrl} via proxy:`, error);
+                }
+            }
+
+            if (allArticles.length > 0) {
+                newsData = allArticles;
+                console.log('Combined news data fetched:', newsData);
+            } else {
+                // Fallback message if no articles were successfully loaded from any source
+                newsData = [{ title: 'News feed unavailable. Please check RSS2JSON API key or the RSS feed URLs.', description: '' }];
+                console.warn('No news articles loaded. Displaying fallback message.');
+            }
+            displayNewsTicker();
+        }
+
+        // Display news in the ticker
+        function displayNewsTicker() {
             const newsScroll = document.getElementById('newsScroll');
-            newsScroll.innerHTML = `<div>${singleSetHtml}</div><div>${singleSetHtml}</div>`;
-            
-            const contentWidth = newsScroll.scrollWidth / 2;
-            const viewportWidth = newsScroll.parentElement.offsetWidth;
-            const speed = 100;
-            const animationDuration = (contentWidth + viewportWidth) / speed;
+            if (!newsScroll) return;
 
-            newsScroll.style.animation = 'none';
-            newsScroll.offsetHeight; 
-            newsScroll.style.animation = `scroll-left ${animationDuration}s linear infinite`; 
-            console.log('Enhanced fallback news ticker loaded with shuffled content');
+            newsScroll.innerHTML = ''; // Clear existing content
+
+            if (newsData.length === 0) {
+                newsScroll.innerHTML = '<div class="news-loading">No news to display.</div>';
+                return;
+            }
+
+            // Create a single block of news items
+            const newsItemsHtml = newsData.map(item => `<div class="news-item">${item.title}</div>`).join('');
+            
+            // Duplicate the content to ensure seamless looping
+            newsScroll.innerHTML = `<div>${newsItemsHtml}</div><div>${newsItemsHtml}</div>`;
+
+            // Adjust animation duration based on content length for smoother scroll
+            const contentWidth = newsScroll.scrollWidth / 2; // Width of one set of duplicated content
+            const tickerSpeed = 60; // Pixels per second
+            const duration = contentWidth / tickerSpeed; // Seconds
+            newsScroll.style.animationDuration = `${duration}s`;
         }
 
-        async function transitionContent(cityConfigToDisplay) {
-            const weatherCard = document.getElementById('weatherCard');
-            const interstitialBackground = document.getElementById('interstitialBackground');
-            const interstitialImageElement = document.getElementById('interstitialImage');
-            
-            const currentVideoBg = document.getElementById(activeVideoBackgroundId);
-            const nextVideoBgId = (activeVideoBackgroundId === 'videoBackground1') ? 'videoBackground2' : 'videoBackground1';
-            const nextVideoBg = document.getElementById(nextVideoBgId);
+        // Function to smoothly transition backgrounds
+        async function transitionBackground(newVideoDivId, newStreamUrl, weatherCondition) {
+            const activeBg = document.getElementById(activeVideoBackgroundId);
+            const nextBg = document.getElementById(newVideoDivId);
+            const interstitialBg = document.getElementById('interstitialBackground');
+            const interstitialImage = document.getElementById('interstitialImage');
 
-            // Pre-set next video background to off-screen and visible for smooth transition
-            nextVideoBg.style.transition = 'none';
-            nextVideoBg.style.transform = 'translateX(-100%)';
-            nextVideoBg.classList.remove('inactive-bg');
-            nextVideoBg.classList.add('active-bg');
-            nextVideoBg.style.display = 'block';
+            // Get the current city object to check for specific fallback image
+            const currentCity = CITIES[currentCityIndex];
 
-            // Phase 1: Fade out current weather card
-            console.log('Transition: Phase 1 - Fading out current weather card.');
-            weatherCard.style.transition = 'opacity 1s ease-out';
-            weatherCard.style.opacity = '0';
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Removed the Unsplash API call.
+            let imageUrl = currentCity.fallbackImageUrl; // Directly use the city's fallback image
 
-            // Hide and reset current weather card's position after fade out
-            weatherCard.style.transition = 'none';
-            weatherCard.style.transform = 'translateX(-100%)'; 
-            weatherCard.style.display = 'none'; 
-            weatherCard.offsetHeight; // Force reflow
-
-            // Phase 2: Slide out current video AND Slide in interstitial
-            console.log('Transition: Phase 2 - Sliding out current video, sliding in interstitial.');
-            currentVideoBg.style.transition = 'transform 1s ease-in-out';
-            currentVideoBg.style.transform = 'translateX(100%)'; 
-
-            // Set interstitial image before it slides in
-            if (cityConfigToDisplay.unsplashImageUrl) {
-                interstitialImageElement.src = cityConfigToDisplay.unsplashImageUrl;
-                console.log(`Setting interstitial image for ${cityConfigToDisplay.displayName} from pre-loaded Unsplash URL.`);
+            if (imageUrl) {
+                interstitialImage.src = imageUrl;
             } else {
-                interstitialImageElement.src = 'https://images.pexels.com/photos/1118873/pexels-photo-1118873.jpeg?cs=srgb&dl=pexels-jplenio-1118873.jpg&fm=jpg';
-                console.warn(`No pre-loaded Unsplash image for ${cityConfigToDisplay.displayName}. Using default Pexels interstitial.`);
+                // Fallback to a generic image or placeholder if no specific fallback is defined
+                interstitialImage.src = 'https://placehold.co/1920x1080/000000/FFFFFF?text=Image+Unavailable';
             }
-            interstitialBackground.style.display = 'block';
-            interstitialBackground.offsetHeight; // Force reflow here
-            interstitialBackground.style.transition = 'transform 1s ease-in-out';
-            interstitialBackground.style.transform = 'translateX(0%)'; 
 
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Show interstitial, slide it in
+            interstitialBg.style.display = 'block';
+            interstitialBg.style.transform = 'translateX(0%)';
 
-            // Hide and reset current video background after it slides out
-            currentVideoBg.classList.remove('active-bg');
-            currentVideoBg.classList.add('inactive-bg');
-            currentVideoBg.style.transition = 'none';
-            currentVideoBg.style.transform = 'translateX(-100%)'; 
-            currentVideoBg.style.display = 'none'; 
+            // Wait for interstitial to fully slide in
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Match CSS transition duration
 
-            // Phase 3: Interstitial Hold & Update New Weather Data (weather card is still hidden)
-            console.log('Transition: Phase 3 - Interstitial hold, updating weather data. Weather card display is NONE.');
-            if (cityConfigToDisplay.weatherData) {
-                displayWeatherData(cityConfigToDisplay.weatherData, cityConfigToDisplay.displayName, cityConfigToDisplay.state);
-                weatherCard.style.opacity = '0'; // Ensure it's transparent
-                weatherCard.style.transform = 'translateX(-100%)'; // Ensure it's off-screen left
-                weatherCard.offsetHeight; // Force reflow to apply content and transform
-            } else {
-                displayWeatherData(null, cityConfigToDisplay.displayName, cityConfigToDisplay.state); 
-                weatherCard.style.opacity = '0';
-                weatherCard.style.transform = 'translateX(0%)'; 
-                weatherCard.offsetHeight;
-            }
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Preload the next video in the `nextBg` element
+            console.log(`Preloading video for ${newStreamUrl} into ${newVideoDivId}`);
+            const videoLoaded = await loadVideo(nextBg, newStreamUrl);
 
-
-            // Phase 4: Slide out interstitial AND Slide in new video
-            console.log('Transition: Phase 4 - Sliding out interstitial, sliding in new video.');
-            interstitialBackground.style.transition = 'transform 1s ease-in-out';
-            interstitialBackground.style.transform = 'translateX(100%)'; 
-
-            nextVideoBg.style.transition = 'transform 1s ease-in-out';
-            nextVideoBg.style.transform = 'translateX(0%)'; 
-
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            // Hide and reset interstitial after it slides out
-            interstitialBackground.style.display = 'none';
-            interstitialBackground.offsetHeight; // Force reflow here
-            interstitialBackground.style.transform = 'translateX(-100%)'; 
-
-            activeVideoBackgroundId = nextVideoBgId; // Update active background tracker
-
-            // Phase 5: Make weather card visible and then fade in and slide in
-            console.log('Transition: Phase 5 - Fading in and sliding in new weather card.');
-            weatherCard.style.display = 'flex'; 
-            weatherCard.offsetHeight; // Force reflow to apply display change before transition
+            // Hide active background and interstitial after next video is loaded/failed
+            activeBg.classList.remove('active-bg');
+            activeBg.classList.add('inactive-bg');
             
-            weatherCard.style.transition = 'opacity 1s ease-in, transform 1s ease-out'; 
-            weatherCard.style.opacity = '1';
-            weatherCard.style.transform = 'translateX(0%)'; 
+            nextBg.classList.remove('inactive-bg');
+            nextBg.classList.add('active-bg');
 
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            weatherCard.style.transform = ''; 
-            console.log('Transition complete. New city fully displayed.');
+            activeVideoBackgroundId = newVideoDivId; // Update the active background ID
+
+            // Slide out interstitial
+            interstitialBg.style.transform = 'translateX(100%)'; // Slide out to the right
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Match CSS transition duration
+            interstitialBg.style.display = 'none';
+            interstitialBg.style.transform = 'translateX(-100%)'; // Reset for next use
         }
 
-        let transitionPromise = Promise.resolve(); 
 
-        async function switchCityAndPreloadNext() {
-            await transitionPromise;
+        // Main function to update weather, video, and rotate cities
+        async function updateCityView() {
+            const city = CITIES[currentCityIndex];
+            const nextCityIndex = (currentCityIndex + 1) % CITIES.length;
+            const nextCity = CITIES[nextCityIndex];
 
-            currentCityIndex = (currentCityIndex + 1) % CITIES.length;
-            const cityToDisplayConfig = CITIES[currentCityIndex];
+            // Determine which video background will become active and which will be preloaded
+            const currentVideoBgDiv = document.getElementById(activeVideoBackgroundId);
+            const nextVideoBgId = activeVideoBackgroundId === 'videoBackground1' ? 'videoBackground2' : 'videoBackground1';
+            const nextVideoBgDiv = document.getElementById(nextVideoBgId);
 
-            // Start the actual transition for the city that was *pre-loaded* in the previous cycle
-            transitionPromise = transitionContent(cityToDisplayConfig); 
-            await transitionPromise; 
+            console.log(`Switching to city: ${city.displayName}`);
 
-            // After the transition for the current city is complete, trigger pre-loading for the *next* city in the sequence
-            clearTimeout(preLoadTimeoutId); // Clear any pending pre-load from previous cycle
-            const nextCityToPreloadIndex = (currentCityIndex + 1) % CITIES.length;
-            const cityToPreloadConfig = CITIES[nextCityToPreloadIndex];
+            // Fetch weather data for the current city
+            const weather = await fetchWeatherDataAsync(city.apiName, city.state, city.countryCode);
+            displayWeatherData(weather, city.displayName, city.state);
 
-            preLoadTimeoutId = setTimeout(async (preloadConfig) => {
-                console.log(`INITIATING PRE-LOAD for ${preloadConfig.displayName}...`);
-                const preLoadVideoBgId = (activeVideoBackgroundId === 'videoBackground1') ? 'videoBackground2' : 'videoBackground1';
-                const preLoadVideoBg = document.getElementById(preLoadVideoBgId);
+            // The weatherCondition parameter for transitionBackground is no longer used for image fetching
+            // but is kept as a parameter for consistency if future features require it.
+            const weatherCondition = weather ? weather.fetchedCondition : 'landscape';
 
-                const videoSuccess = await loadVideo(preLoadVideoBg, preloadConfig.stream);
-                const weatherDataResult = await fetchWeatherDataAsync(preloadConfig.apiName, preloadConfig.state, preloadConfig.countryCode); 
-                
-                preloadConfig.weatherData = weatherDataResult;
-                preloadConfig.videoLoaded = videoSuccess;
-
-                if (weatherDataResult && weatherDataResult.fetchedCondition) {
-                    const unsplashUrl = await getUnsplashImageUrl(weatherDataResult.fetchedCondition);
-                    if (unsplashUrl) {
-                        preloadConfig.unsplashImageUrl = unsplashUrl; // Store Unsplash URL on the city config
-                        console.log(`PRE-LOAD: Unsplash image fetched for ${preloadConfig.displayName}.`);
-                    } else {
-                        console.warn(`PRE-LOAD: Could not fetch Unsplash image for ${preloadConfig.displayName} (${weatherDataResult.fetchedCondition}).`);
-                    }
-                } else {
-                    console.warn(`PRE-LOAD: No weather condition to fetch Unsplash image for ${preloadConfig.displayName}.`);
-                }
-                console.log(`PRE-LOAD for ${preloadConfig.displayName} complete.`);
-            }, 50000, cityToPreloadConfig); // Pre-load starts 50 seconds into the current city's 60-second display cycle
-        }
-
-        // Initial load function to set up the first city's data and video
-        async function initialLoad() {
-            const weatherCard = document.getElementById('weatherCard');
-            const initialVideoBg = document.getElementById(activeVideoBackgroundId);
-            const interstitialImageElement = document.getElementById('interstitialImage');
-
-            weatherCard.style.opacity = '0';
-            weatherCard.style.transform = 'translateX(0%)'; 
-            weatherCard.style.display = 'block'; 
-
-            console.log(`Initial load: Fetching data for ${CITIES[0].displayName}.`);
-            const videoSuccess = await loadVideo(initialVideoBg, CITIES[0].stream);
-            const initialWeatherData = await fetchWeatherDataAsync(CITIES[0].apiName, CITIES[0].state, CITIES[0].countryCode); 
-
-            if (initialWeatherData && initialWeatherData.fetchedCondition) {
-                const unsplashUrl = await getUnsplashImageUrl(initialWeatherData.fetchedCondition);
-                if (unsplashUrl) {
-                    interstitialImageElement.src = unsplashUrl;
-                    CITIES[0].unsplashImageUrl = unsplashUrl; // Store URL for this city
-                    console.log(`Initial Unsplash image set for ${CITIES[0].displayName}.`);
-                } else {
-                    console.warn(`Could not fetch Unsplash image for ${CITIES[0].displayName} (${initialWeatherData.fetchedCondition}). Using default.`);
-                }
-            } else {
-                console.warn(`No weather condition to fetch Unsplash image for ${CITIES[0].displayName}. Using default.`);
-            }
-
-            if (videoSuccess && initialWeatherData) {
-                 console.log('Initial video and weather data loaded. Application ready.');
-                 displayWeatherData(initialWeatherData, CITIES[0].displayName, CITIES[0].state);
-                 CITIES[0].weatherData = initialWeatherData; // Store data for this city
-                 CITIES[0].videoLoaded = videoSuccess;
-                 
-                 weatherCard.style.transition = 'opacity 1s ease-in';
-                 weatherCard.style.opacity = '1';
-                 await new Promise(resolve => setTimeout(resolve, 1000)); 
-                 
-                 weatherCard.style.transform = '';
-
-            } else {
-                console.error('Initial load failed for video or weather data. Application might not function as expected.');
-                if (!initialWeatherData) {
-                    displayWeatherData(null, CITIES[0].displayName, CITIES[0].state); 
-                    weatherCard.style.opacity = '1'; 
-                } else {
-                    displayWeatherData(initialWeatherData, CITIES[0].displayName, CITIES[0].state);
-                    showGifFallback(); 
-                    weatherCard.style.opacity = '1'; 
-                }
-            }
-           
-            fetchNewsData(); 
-            setInterval(updateClock, 60000); 
-
-            setInterval(switchCityAndPreloadNext, 60000); 
-
-            // Trigger the initial pre-load for the *second* city (CITIES[1])
-            const initialNextCityToPreloadIndex = (currentCityIndex + 1) % CITIES.length;
-            const initialCityToPreloadConfig = CITIES[initialNextCityToPreloadIndex];
-
-            preLoadTimeoutId = setTimeout(async (preloadConfig) => {
-                console.log(`INITIATING PRE-LOAD for ${preloadConfig.displayName} (first pre-load cycle)...`);
-                const preLoadVideoBgId = (activeVideoBackgroundId === 'videoBackground1') ? 'videoBackground2' : 'videoBackground1';
-                const preLoadVideoBg = document.getElementById(preLoadVideoBgId);
-
-                const videoSuccess = await loadVideo(preLoadVideoBg, preloadConfig.stream);
-                const weatherDataResult = await fetchWeatherDataAsync(preloadConfig.apiName, preloadConfig.state, preloadConfig.countryCode); 
-                
-                preloadConfig.weatherData = weatherDataResult;
-                preloadConfig.videoLoaded = videoSuccess;
-
-                if (weatherDataResult && weatherDataResult.fetchedCondition) {
-                    const unsplashUrl = await getUnsplashImageUrl(weatherDataResult.fetchedCondition);
-                    if (unsplashUrl) {
-                        preloadConfig.unsplashImageUrl = unsplashUrl; 
-                        console.log(`Initial PRE-LOAD: Unsplash image fetched for ${preloadConfig.displayName}.`);
-                    } else {
-                        console.warn(`Initial PRE-LOAD: Could not fetch Unsplash image for ${preloadConfig.displayName} (${weatherDataResult.fetchedCondition}).`);
-                    }
-                } else {
-                    console.warn(`Initial PRE-LOAD: No weather condition to fetch Unsplash image for ${preloadConfig.displayName}.`);
-                }
-                console.log(`Initial pre-loading for ${preloadConfig.displayName} complete.`);
-            }, 50000, initialCityToPreloadConfig); 
+            // Perform background transition with the current city's stream
+            await transitionBackground(currentVideoBgDiv.id, city.stream, weatherCondition);
             
-            setInterval(fetchNewsData, 1800000); 
+            // Set up preloading for the *next* city's video
+            clearTimeout(preLoadTimeoutId); // Clear any existing preload timeout
+            preLoadTimeoutId = setTimeout(async () => {
+                console.log(`Preloading next city video (${nextCity.displayName}) into ${nextVideoBgId}`);
+                await loadVideo(nextVideoBgDiv, nextCity.stream);
+            }, 1000); // Start preloading after the current video has loaded for 1 second
+
+            // Advance to the next city for the next cycle
+            currentCityIndex = nextCityIndex;
         }
 
-        document.addEventListener('DOMContentLoaded', initialLoad);
-        
-        document.addEventListener('visibilitychange', function() {
-            if (!document.hidden) {
-                const activeMediaElement = document.getElementById(activeVideoBackgroundId).querySelector('video, iframe');
-                if (activeMediaElement && typeof activeMediaElement.play === 'function') {
-                    activeMediaElement.play().catch(e => console.log('Video restart failed:', e));
-                }
-            }
+        // Initial load and then set interval for rotation
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Initial fetch for the first city
+            await updateCityView(); 
+            fetchNewsData(); // Fetch news once on load
+
+            // Set interval for city rotation every 60 seconds (60000 milliseconds)
+            cityRotationInterval = setInterval(updateCityView, 60000); // 1 minute
+
+            // Set interval for news update every 10 minutes (600000 milliseconds)
+            setInterval(fetchNewsData, 600000); 
         });
+
     </script>
 </body>
 </html>
