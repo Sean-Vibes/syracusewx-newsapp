@@ -28,7 +28,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: -1;
+            z-index: 0; /* Base layer for videos */
             overflow: hidden;
             opacity: 1; /* Default opacity */
             transition: opacity 1s ease-in-out; /* Transition for fade */
@@ -59,7 +59,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: -2; /* Lower z-index for GIF so videos can cover it */
+            z-index: -1; /* Lower z-index for GIF so videos can cover it */
             background-image: url('https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExeDdra200dG45YW9qYTN5YW9qYTNyaHE0ZjNrZDR0and2OWF1NGs2ajM5enRnMiZlcD12MV9pbnRlcm5sYWZfYnlfaWQmY3Q9Zw/m2hjlbNbSRGy4/giphy.gif');
             background-size: cover;
             background-position: center;
@@ -74,7 +74,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 2; /* Higher than video backgrounds, lower than weather card */
+            z-index: 1; /* Covers videos during transition */
             display: none; /* Hidden by default */
             opacity: 0; /* Start fully transparent */
             transition: opacity 1s ease-in-out; /* Transition for fade */
@@ -92,12 +92,10 @@
         /* Styles for managing active and inactive video backgrounds */
         .video-background.active-bg {
             opacity: 1;
-            z-index: -1; /* Active video is above inactive */
         }
 
         .video-background.inactive-bg {
             opacity: 0; /* Hidden by being transparent */
-            z-index: -1;
             pointer-events: none; /* Make it non-interactive when hidden */
         }
 
@@ -109,12 +107,12 @@
             width: 100%;
             height: 100%;
             background: linear-gradient(135deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.1) 100%);
-            z-index: 1;
+            z-index: 2; /* Darkens video/image */
         }
 
         .weather-container {
             position: relative;
-            z-index: 2;
+            z-index: 3; /* On top of everything */
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -140,21 +138,12 @@
             box-shadow: 0 8px 32px rgba(0,0,0,0.3);
             max-width: 500px;
             width: 100%;
-            animation: fadeInUp 1s ease-out; /* Keep initial fade-in */
-            opacity: 1; /* Default to visible */
-            transition: opacity 1s ease-in-out, transform 1s ease-in-out; /* Combined for fade and slide */
+            /* Removed initial fadeInUp animation to allow JS to control opacity */
+            opacity: 0; /* Starts transparent, controlled by JS for transitions */
+            transition: opacity 0.5s ease-in-out; /* New transition for weather card */
         }
 
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+        /* Removed @keyframes fadeInUp as it's no longer needed for initial load */
 
         .location {
             font-size: 3rem;
@@ -438,7 +427,7 @@
     </div>
 
     <div class="interstitial-background" id="interstitialBackground">
-        <img id="interstitialImage" src="https://images.pexels.com/photos/1118873/pexels-photo-1118873.jpeg?cs=srgb&dl=pexels-jplenio-1118873.jpg&fm=jpg" alt="Transition Image - Weather and Landscape" onerror="this.onerror=null; this.src='https://placehold.co/1920x1080/000000/FFFFFF?text=Image+Unavailable';" >
+        <img id="interstitialImage" src="https://images.pexels.com/photos/1118873/pexels-photo-1118873.jpg?cs=srgb&dl=pexels-jplenio-1118873.jpg&fm=jpg" alt="Transition Image - Weather and Landscape" onerror="this.onerror=null; this.src='https://placehold.co/1920x1080/000000/FFFFFF?text=Image+Unavailable';" >
     </div>
 
     <div class="gif-background" id="gifBackground"></div>
@@ -479,16 +468,16 @@
                 apiName: 'Vancouver',
                 state: 'BC', 
                 countryCode: 'CA', 
-                stream: 'https://www.youtube.com/embed/sLixr8cThJo', // Updated YouTube embed URL
+                stream: 'https://www.youtube.com/embed/sLixr8cThJo', 
                 fallbackImageUrl: 'https://cleanenergycanada.org/wp-content/uploads/2021/12/shutterstock_1531447955-scaled.jpg' 
             },
             {
-                displayName: 'Myrtle Beach', 
-                apiName: 'Myrtle Beach',     
-                state: 'SC',
-                countryCode: 'US',
-                stream: 'https://www.youtube.com/embed/MAPDh0XDtZs',
-                fallbackImageUrl: 'https://www.myrtlebeach.com/wp-content/uploads/2016/11/Homepage-Main.jpg' 
+                displayName: 'Fort Lauderdale', 
+                apiName: 'Fort Lauderdale',
+                state: 'FL', 
+                countryCode: 'US', 
+                stream: 'https://www.youtube.com/embed/_tam0-UVAcY', 
+                fallbackImageUrl: 'https://www.visittheusa.com/sites/default/files/styles/hero_l/public/images/hero_media_image/2017-06/addd8ac5bc037bf192f0e446d0d7ec47.jpeg?itok=rMQX-xtt' 
             },
             {
                 displayName: 'Toronto',
@@ -499,6 +488,38 @@
                 fallbackImageUrl: 'https://www.nomadicmatt.com/wp-content/uploads/2018/01/torontoguide.jpg' 
             },
             {
+                displayName: 'San Diego', 
+                apiName: 'San Diego',
+                state: 'CA', 
+                countryCode: 'US', 
+                stream: 'https://www.youtube.com/embed/zScdt7Z839s', 
+                fallbackImageUrl: 'https://rpmliving.com/wp-content/uploads/2024/10/San-Diego-2.jpg' 
+            },
+            {   // Moved Newcastle upon Tyne below San Diego
+                displayName: 'Newcastle upon Tyne',
+                apiName: 'Newcastle upon Tyne',
+                state: null,
+                countryCode: 'UK', 
+                stream: 'https://www.youtube.com/embed/PP9zuCxR2NU', 
+                fallbackImageUrl: 'https://www.cestujlevne.com/obrazky/26/74/192674-1200w.jpg' 
+            },
+            {   
+                displayName: 'Myrtle Beach', 
+                apiName: 'Myrtle Beach',     
+                state: 'SC',
+                countryCode: 'US',
+                stream: 'https://www.youtube.com/embed/MAPDh0XDtZs',
+                fallbackImageUrl: 'https://www.myrtlebeach.com/wp-content/uploads/2016/11/Homepage-Main.jpg' 
+            },
+            {
+                displayName: 'Sydney', 
+                apiName: 'Sydney',
+                state: null, 
+                countryCode: 'AU', 
+                stream: 'https://www.youtube.com/embed/jshwkG1ZpP8', 
+                fallbackImageUrl: 'https://www.travellers-autobarn.com.au/wp-content/uploads/2022/03/image.adapt_.1663.medium-1024x576.jpg' 
+            },
+            {
                 displayName: 'Grand Forks',
                 apiName: 'Grand Forks',
                 state: 'ND',
@@ -506,18 +527,28 @@
                 stream: 'https://www.youtube.com/embed/mpcvRHLGBRw',
                 fallbackImageUrl: 'https://media.discordapp.net/attachments/1275781545675722845/1384537200468819978/unnamed-e1623966048345-jpg.png?ex=68629c40&is=68614ac0&hm=8d6ce680c571b2cfb21eb59f75dc1221733003e63c51aaaf73ff4c4d3526c9d4&=&format=webp&quality=lossless' 
             },
+            {   // New city: Rio de Janeiro, Brazil, inserted after Grand Forks
+                displayName: 'Rio de Janeiro',
+                apiName: 'Rio de Janeiro',
+                state: null, 
+                countryCode: 'BR', 
+                stream: 'https://www.youtube.com/embed/APpeiZkM-4c', 
+                fallbackImageUrl: 'https://bookers.s3.amazonaws.com/pages/ae79d48c-5994-449a-a10a-f02a0ea455b0_Cristo+Redentor+Riotur.jpg' 
+            },
             {
-                displayName: 'City of Seaside', 
+                displayName: 'Seaside', 
                 apiName: 'Seaside', 
                 state: 'OR',
                 countryCode: 'US',
                 stream: 'https://www.youtube.com/embed/JjI5KtjJGfo', 
-                fallbackImageUrl: 'https://www.visitoregon.com/wp-content/uploads/2022/02/junctioncave-1024x768.jpg'
+                fallbackImageUrl: 'https://static.cozycozy.com/images/catalog/bg2/horizontal-seaside.jpg' 
             }
         ];
 
         let currentCityIndex = 0;
         let activeVideoBackgroundId = 'videoBackground1'; 
+        let cityLoopCount = 0; // Counter for full city loops
+        const MAX_LOOPS = 3; // Number of full loops before refresh
 
         // RSS2JSON API Key 
         const RSS_API_KEY = 'ngd011e5pl0bwl0ejgfc0eu7126l19yaenu4iewv'; 
@@ -824,20 +855,24 @@
             const currentDateElement = document.getElementById('currentDate');
             const currentTimeElement = document.getElementById('currentTime');
 
-            // Only proceed if elements exist and weatherData has a valid timezone
-            if (!currentDateElement || !currentTimeElement || weatherData.timezone === undefined || weatherData.timezone === null) {
-                // Fallback to local browser time if city timezone is not available
-                const now = new Date();
-                currentDateElement.textContent = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-                currentTimeElement.textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+            // If elements don't exist yet, simply return.
+            // They will be created by displayWeatherData, and this function will succeed on subsequent calls.
+            if (!currentDateElement || !currentTimeElement) {
                 return;
             }
 
-            const now = new Date(); // Current time in local browser timezone
-            const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000); // Convert to UTC milliseconds
-            const cityLocalTimeMs = utcTime + (weatherData.timezone * 1000); // Apply city's UTC offset
+            const now = new Date();
+            let cityDate;
 
-            const cityDate = new Date(cityLocalTimeMs);
+            // Determine the date object based on whether timezone data is available
+            if (weatherData.timezone !== undefined && weatherData.timezone !== null) {
+                const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000); // Convert to UTC milliseconds
+                const cityLocalTimeMs = utcTime + (weatherData.timezone * 1000); // Apply city's UTC offset
+                cityDate = new Date(cityLocalTimeMs);
+            } else {
+                // Fallback to local browser time if city timezone is not available
+                cityDate = now;
+            }
 
             // Date format: Weekday, Month Day, Year
             const optionsDate = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
@@ -941,53 +976,68 @@
             });
         }
 
-        // Function to smoothly transition backgrounds
+        // Function to smoothly transition backgrounds and weather card visibility
         async function transitionBackground(newVideoDivId, newStreamUrl) {
             const activeBg = document.getElementById(activeVideoBackgroundId);
             const nextBg = document.getElementById(newVideoDivId);
             const interstitialBg = document.getElementById('interstitialBackground');
             const interstitialImage = document.getElementById('interstitialImage');
+            const weatherCard = document.getElementById('weatherCard');
 
-            // Get the current city object to check for specific fallback image
             const currentCity = CITIES[currentCityIndex];
-
             let imageUrl = currentCity.fallbackImageUrl; 
 
-            // Try to load the image first
+            // Step 1: Fade out weather information (if not already transparent)
+            if (weatherCard.style.opacity !== '0') {
+                weatherCard.style.opacity = '0';
+                await new Promise(resolve => setTimeout(resolve, 500)); // Wait for weather card to fade out (0.5s)
+            }
+            
+            // Load the interstitial image
             try {
                 const loadedImage = await loadImage(imageUrl);
-                interstitialImage.src = loadedImage.src; // Set src only after it's loaded
+                interstitialImage.src = loadedImage.src; 
             } catch (error) {
                 console.warn(`Could not load specific fallback image for ${currentCity.displayName}. Falling back to generic.`);
                 interstitialImage.src = 'https://placehold.co/1920x1080/000000/FFFFFF?text=Image+Unavailable';
             }
             
-            // Step 1: Show interstitial by setting display to block and fading in its opacity
+            // Step 2: Show interstitial and fade it in. Simultaneously, start fading out the current active video.
             interstitialBg.style.display = 'block';
-            interstitialBg.style.opacity = '1';
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for interstitial fade-in
-
-            // Step 2: Load the next video into the 'nextBg' container
-            console.log(`Preloading video for ${newStreamUrl} into ${newVideoDivId}`);
-            await loadVideo(nextBg, newStreamUrl);
-
-            // Step 3: Fade out the current active video and fade in the new one
-            activeBg.classList.remove('active-bg');
+            interstitialBg.style.opacity = '1'; // Fade in interstitial
+            activeBg.classList.remove('active-bg'); // Start fading out old video
             activeBg.classList.add('inactive-bg');
-            
-            nextBg.classList.remove('inactive-bg');
-            nextBg.classList.add('active-bg');
+
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for interstitial fade-in and old video fade-out (1s)
+
+            // Step 3: Load the next video into the 'nextBg' container
+            console.log(`Loading new video for ${newStreamUrl} into ${newVideoDivId}`);
+            // This promise resolves when the video is loaded and successfully attempts to play
+            const videoLoadedSuccessfully = await loadVideo(nextBg, newStreamUrl); 
+
+            if (videoLoadedSuccessfully) {
+                // Step 4: Video is now playing. Fade in the new video, fade out the interstitial.
+                nextBg.classList.remove('inactive-bg');
+                nextBg.classList.add('active-bg'); // Make new video active (visible)
+
+                interstitialBg.style.opacity = '0'; // Start fading out interstitial
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for both fades to complete (1s)
+
+                // Final clean up for interstitial
+                interstitialBg.style.display = 'none'; 
+
+                // Step 5: Fade in weather information now that the new live stream is visible.
+                weatherCard.style.opacity = '1';
+            } else {
+                // If video failed to load, GIF fallback is already triggered by loadVideo.
+                // Ensure interstitial is gone and bring weather card back.
+                interstitialBg.style.display = 'none'; 
+                weatherCard.style.opacity = '1'; // Bring weather card back even over GIF
+                console.log("Video failed to load, weather card will reappear over GIF if it was previously shown.");
+            }
 
             // Update the active background ID
             activeVideoBackgroundId = newVideoDivId; 
-
-            // Step 4: Wait for the video transitions to complete
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Match video transition duration
-
-            // Step 5: Fade out the interstitial and hide it
-            interstitialBg.style.opacity = '0';
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for interstitial fade-out
-            interstitialBg.style.display = 'none'; // Finally hide it from layout
         }
 
 
@@ -996,6 +1046,19 @@
             const city = CITIES[currentCityIndex];
             const nextCityIndex = (currentCityIndex + 1) % CITIES.length;
             const nextCity = CITIES[nextCityIndex];
+
+            // Increment loop count when returning to the first city (end of a full loop)
+            if (currentCityIndex === 0 && cityLoopCount > 0) { // Avoid incrementing on initial load if starting at index 0
+                cityLoopCount++;
+                console.log(`Completed loop ${cityLoopCount} of ${MAX_LOOPS}`);
+                if (cityLoopCount >= MAX_LOOPS) {
+                    console.log(`Max loops (${MAX_LOOPS}) reached. Reloading page.`);
+                    clearInterval(cityRotationInterval); // Stop rotation
+                    location.reload(); // Reload the page
+                    return; // Exit to prevent further execution before reload
+                }
+            }
+
 
             // Determine which video background will become active and which will be preloaded
             const currentVideoBgDiv = document.getElementById(activeVideoBackgroundId);
@@ -1025,11 +1088,14 @@
         // Initial load and then set interval for rotation
         document.addEventListener('DOMContentLoaded', async () => {
             // Initial fetch for the first city
+            // This first call will handle the initial display of both video and weather card
             await updateCityView(); 
             fetchNewsData(); // Fetch news once on load
 
             // Set interval for city rotation every 60 seconds (60000 milliseconds)
             cityRotationInterval = setInterval(updateCityView, 60000); // 1 minute
+            cityLoopCount = 1; // Start counting from the first loop that just began.
+
 
             // Set interval for news update every 30 minutes (1800000 milliseconds)
             setInterval(fetchNewsData, 1800000); 
