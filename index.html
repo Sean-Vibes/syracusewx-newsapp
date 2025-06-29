@@ -30,7 +30,8 @@
             height: 100%;
             z-index: -1;
             overflow: hidden;
-            transition: transform 1s ease-in-out; /* Added transition for sliding */
+            opacity: 1; /* Default opacity */
+            transition: opacity 1s ease-in-out; /* Transition for fade */
         }
 
         .video-background .media-container {
@@ -73,10 +74,10 @@
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 0; /* Higher than video backgrounds, lower than weather card */
+            z-index: 2; /* Higher than video backgrounds, lower than weather card */
             display: none; /* Hidden by default */
-            transform: translateX(-100%); /* Start off-screen left */
-            transition: transform 1s ease-in-out;
+            opacity: 0; /* Start fully transparent */
+            transition: opacity 1s ease-in-out; /* Transition for fade */
             background-color: #333; /* Fallback solid color */
         }
 
@@ -90,12 +91,12 @@
 
         /* Styles for managing active and inactive video backgrounds */
         .video-background.active-bg {
-            transform: translateX(0%);
+            opacity: 1;
             z-index: -1; /* Active video is above inactive */
         }
 
         .video-background.inactive-bg {
-            transform: translateX(-100%); /* Hidden off-screen to the left */
+            opacity: 0; /* Hidden by being transparent */
             z-index: -1;
             pointer-events: none; /* Make it non-interactive when hidden */
         }
@@ -247,7 +248,7 @@
             background: linear-gradient(90deg, #ff9a9e 0%, #fecfef 100%);
         }
 
-        .detail-item:nth-child(2):::before {
+        .detail-item:nth-child(2)::before {
             background: linear-gradient(90deg, #a8edea 0%, #fed6e3 100%);
         }
 
@@ -463,8 +464,6 @@
         // API key for OpenWeatherMap (replace with your own if you have one)
         const API_KEY = '1cf8937cc9682ba717da9c52c975283e';
         
-        // Removed Unsplash Access Key
-
         // Define the city configurations
         const CITIES = [
             {
@@ -474,6 +473,14 @@
                 countryCode: 'US', 
                 stream: 'https://tower.armorycam.com/stream/armorystream.m3u8',
                 fallbackImageUrl: 'https://www.syracuse.com/resizer/XEzJNnUyf1v3P8uP0NtUDhnCd-o=/arc-anglerfish-arc2-prod-advancelocal/public/ASOGP6SJG5AAVPB5KEFSAJHNT4.jpg' 
+            },
+            {
+                displayName: 'Vancouver',
+                apiName: 'Vancouver',
+                state: 'BC', 
+                countryCode: 'CA', 
+                stream: 'https://www.youtube.com/embed/sLixr8cThJo', // Updated YouTube embed URL
+                fallbackImageUrl: 'https://cleanenergycanada.org/wp-content/uploads/2021/12/shutterstock_1531447955-scaled.jpg' 
             },
             {
                 displayName: 'Myrtle Beach', 
@@ -498,6 +505,14 @@
                 countryCode: 'US',
                 stream: 'https://www.youtube.com/embed/mpcvRHLGBRw',
                 fallbackImageUrl: 'https://media.discordapp.net/attachments/1275781545675722845/1384537200468819978/unnamed-e1623966048345-jpg.png?ex=68629c40&is=68614ac0&hm=8d6ce680c571b2cfb21eb59f75dc1221733003e63c51aaaf73ff4c4d3526c9d4&=&format=webp&quality=lossless' 
+            },
+            {
+                displayName: 'City of Seaside', 
+                apiName: 'Seaside', 
+                state: 'OR',
+                countryCode: 'US',
+                stream: 'https://www.youtube.com/embed/JjI5KtjJGfo', 
+                fallbackImageUrl: 'https://www.visitoregon.com/wp-content/uploads/2022/02/junctioncave-1024x768.jpg'
             }
         ];
 
@@ -711,8 +726,6 @@
             });
         }
 
-        // Removed getUnsplashImageUrl function as it's no longer used.
-
         // Fetch weather data from OpenWeatherMap
         async function fetchWeatherDataAsync(apiCityName, state, countryCode) { 
             console.log(`Fetching weather data for ${apiCityName}, ${state ? state + ', ' : ''}${countryCode}...`);
@@ -915,8 +928,21 @@
             newsScroll.style.animationDuration = `${duration}s`;
         }
 
+        // Function to load image and ensure it's fully loaded
+        function loadImage(url) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.src = url;
+                img.onload = () => resolve(img);
+                img.onerror = (e) => {
+                    console.error(`Failed to load image: ${url}`, e);
+                    reject(new Error(`Image load error for ${url}`));
+                };
+            });
+        }
+
         // Function to smoothly transition backgrounds
-        async function transitionBackground(newVideoDivId, newStreamUrl, weatherCondition) {
+        async function transitionBackground(newVideoDivId, newStreamUrl) {
             const activeBg = document.getElementById(activeVideoBackgroundId);
             const nextBg = document.getElementById(newVideoDivId);
             const interstitialBg = document.getElementById('interstitialBackground');
@@ -925,41 +951,43 @@
             // Get the current city object to check for specific fallback image
             const currentCity = CITIES[currentCityIndex];
 
-            // Removed the Unsplash API call.
-            let imageUrl = currentCity.fallbackImageUrl; // Directly use the city's fallback image
+            let imageUrl = currentCity.fallbackImageUrl; 
 
-            if (imageUrl) {
-                interstitialImage.src = imageUrl;
-            } else {
-                // Fallback to a generic image or placeholder if no specific fallback is defined
+            // Try to load the image first
+            try {
+                const loadedImage = await loadImage(imageUrl);
+                interstitialImage.src = loadedImage.src; // Set src only after it's loaded
+            } catch (error) {
+                console.warn(`Could not load specific fallback image for ${currentCity.displayName}. Falling back to generic.`);
                 interstitialImage.src = 'https://placehold.co/1920x1080/000000/FFFFFF?text=Image+Unavailable';
             }
-
-            // Show interstitial, slide it in
+            
+            // Step 1: Show interstitial by setting display to block and fading in its opacity
             interstitialBg.style.display = 'block';
-            interstitialBg.style.transform = 'translateX(0%)';
+            interstitialBg.style.opacity = '1';
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for interstitial fade-in
 
-            // Wait for interstitial to fully slide in
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Match CSS transition duration
-
-            // Preload the next video in the `nextBg` element
+            // Step 2: Load the next video into the 'nextBg' container
             console.log(`Preloading video for ${newStreamUrl} into ${newVideoDivId}`);
-            const videoLoaded = await loadVideo(nextBg, newStreamUrl);
+            await loadVideo(nextBg, newStreamUrl);
 
-            // Hide active background and interstitial after next video is loaded/failed
+            // Step 3: Fade out the current active video and fade in the new one
             activeBg.classList.remove('active-bg');
             activeBg.classList.add('inactive-bg');
             
             nextBg.classList.remove('inactive-bg');
             nextBg.classList.add('active-bg');
 
-            activeVideoBackgroundId = newVideoDivId; // Update the active background ID
+            // Update the active background ID
+            activeVideoBackgroundId = newVideoDivId; 
 
-            // Slide out interstitial
-            interstitialBg.style.transform = 'translateX(100%)'; // Slide out to the right
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Match CSS transition duration
-            interstitialBg.style.display = 'none';
-            interstitialBg.style.transform = 'translateX(-100%)'; // Reset for next use
+            // Step 4: Wait for the video transitions to complete
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Match video transition duration
+
+            // Step 5: Fade out the interstitial and hide it
+            interstitialBg.style.opacity = '0';
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for interstitial fade-out
+            interstitialBg.style.display = 'none'; // Finally hide it from layout
         }
 
 
@@ -980,12 +1008,8 @@
             const weather = await fetchWeatherDataAsync(city.apiName, city.state, city.countryCode);
             displayWeatherData(weather, city.displayName, city.state);
 
-            // The weatherCondition parameter for transitionBackground is no longer used for image fetching
-            // but is kept as a parameter for consistency if future features require it.
-            const weatherCondition = weather ? weather.fetchedCondition : 'landscape';
-
             // Perform background transition with the current city's stream
-            await transitionBackground(currentVideoBgDiv.id, city.stream, weatherCondition);
+            await transitionBackground(currentVideoBgDiv.id, city.stream);
             
             // Set up preloading for the *next* city's video
             clearTimeout(preLoadTimeoutId); // Clear any existing preload timeout
@@ -1007,8 +1031,8 @@
             // Set interval for city rotation every 60 seconds (60000 milliseconds)
             cityRotationInterval = setInterval(updateCityView, 60000); // 1 minute
 
-            // Set interval for news update every 10 minutes (600000 milliseconds)
-            setInterval(fetchNewsData, 600000); 
+            // Set interval for news update every 30 minutes (1800000 milliseconds)
+            setInterval(fetchNewsData, 1800000); 
         });
 
     </script>
