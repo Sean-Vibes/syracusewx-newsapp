@@ -512,12 +512,12 @@
                 fallbackImageUrl: 'https://www.myrtlebeach.com/wp-content/uploads/2016/11/Homepage-Main.jpg' 
             },
             {
-                displayName: 'Sydney', 
-                apiName: 'Sydney',
+                displayName: 'Melbourne', // Changed from Sydney
+                apiName: 'Melbourne',     // Changed from Sydney
                 state: null, 
                 countryCode: 'AU', 
-                stream: 'https://www.youtube.com/embed/jshwkG1ZpP8', 
-                fallbackImageUrl: 'https://www.travellers-autobarn.com.au/wp-content/uploads/2022/03/image.adapt_.1663.medium-1024x576.jpg' 
+                stream: 'https://www.youtube.com/embed/l_8DrACHpwY', // New stream link for Melbourne
+                fallbackImageUrl: 'https://ifsa-butler.org/wp-content/uploads/2023/09/HERO-UofMelbourne-274387127.jpg' // New image link for Melbourne
             },
             {
                 displayName: 'Grand Forks',
@@ -528,12 +528,12 @@
                 // Updated fallback image URL for Grand Forks
                 fallbackImageUrl: 'https://media.licdn.com/dms/image/v2/C4E1BAQE3vODcICXSBg/company-background_10000/company-background_10000/0/1649208205055/gfredc_cover?e=2147483647&v=beta&t=wGen1LjAB8kCpidoRtKKDweLbEWzhFBZJ6QJ5cRC6Q0' 
             },
-            {   // New city: Rio de Janeiro, Brazil, inserted after Grand Forks
+            {   
                 displayName: 'Rio de Janeiro',
                 apiName: 'Rio de Janeiro',
                 state: null, 
                 countryCode: 'BR', 
-                stream: 'https://www.youtube.com/embed/APpeiZkM-4c', 
+                stream: 'https://www.youtube.com/embed/6QoLEltTzIM', // Updated stream link for Rio de Janeiro
                 fallbackImageUrl: 'https://bookers.s3.amazonaws.com/pages/ae79d48c-5994-449a-a10a-f02a0ea455b0_Cristo+Redentor+Riotur.jpg' 
             },
             {
@@ -982,7 +982,7 @@
         }
 
         // Function to smoothly transition backgrounds and weather card visibility
-        async function transitionBackground(newVideoDivId, cityToTransitionTo) { // Renamed parameter for clarity
+        async function transitionBackground(newVideoDivId, cityToTransitionTo) { 
             const activeBg = document.getElementById(activeVideoBackgroundId);
             const nextBg = document.getElementById(newVideoDivId);
             const interstitialBg = document.getElementById('interstitialBackground');
