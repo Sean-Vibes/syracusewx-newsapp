@@ -272,7 +272,7 @@
             bottom: 0;
             left: 0;
             width: 100%;
-            height: 80px;
+            height: 160px; /* Doubled from 80px */
             background: linear-gradient(135deg, rgba(0, 0, 0, 0.9) 0%, rgba(20, 20, 20, 0.95) 100%);
             backdrop-filter: blur(15px);
             border-top: 2px solid rgba(255, 255, 255, 0.1);
@@ -290,10 +290,10 @@
             display: flex;
             align-items: center;
             font-weight: bold;
-            font-size: 1.8rem; /* Increased font size for NEWS label */
+            font-size: 3.6rem; /* Doubled from 1.8rem */
             text-transform: uppercase;
             letter-spacing: 1px;
-            min-width: 140px;
+            min-width: 280px; /* Doubled from 140px */
             box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
         }
 
@@ -331,8 +331,8 @@
 
         .news-item {
             color: white;
-            font-size: 1.8rem;
-            margin-right: 80px;
+            font-size: 3.6rem; /* Doubled from 1.8rem */
+            margin-right: 160px; /* Doubled from 80px */
             display: inline-flex;
             align-items: center;
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
@@ -342,14 +342,14 @@
         .news-item::before {
             content: "●";
             color: #ff6b6b;
-            margin-right: 16px;
-            font-size: 1.4rem;
+            margin-right: 32px; /* Doubled from 16px */
+            font-size: 2.8rem; /* Doubled from 1.4rem */
         }
 
         .news-loading {
             color: white;
-            font-size: 1.6rem;
-            padding: 0 20px;
+            font-size: 3.2rem; /* Doubled from 1.6rem */
+            padding: 0 40px; /* Doubled from 20px */
             opacity: 0.7;
             font-weight: 500;
         }
@@ -401,17 +401,17 @@
             }
             /* News Ticker Media Queries */
             .news-ticker {
-                height: 70px;
+                height: 140px; /* Doubled from 70px */
             }
 
             .news-item {
-                font-size: 1.5rem;
-                margin-right: 60px;
+                font-size: 3rem; /* Doubled from 1.5rem */
+                margin-right: 120px; /* Doubled from 60px */
             }
 
             .news-label {
-                font-size: 1.5rem; /* Adjusted for mobile */
-                min-width: 120px;
+                font-size: 3rem; /* Doubled from 1.5rem */
+                min-width: 240px; /* Doubled from 120px */
             }
         }
     </style>
@@ -549,7 +549,8 @@
         // RSS Feed Sources (from USA News Firehose.xml, excluding the problematic Reuters feed)
         const RSS_SOURCES = [
             "http://feeds.foxnews.com/foxnews/national",
-            "http://rss.cnn.com/rss/edition_us.rss"
+            "http://rss.cnn.com/rss/edition_us.rss",
+            "https://globalnews.ca/feed/" // Added Global News RSS feed
         ];
 
         const FALLBACK_GIF = 'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExeDdra200dG45YW9qYTN5YW9qYTNyaHE0ZjNrZDR0and2OWF1NGs2ajM5enRnMiZlcD12MV9pbnRlcm5sYWZfYnlfaWQmY3Q9Zw/m2hjlbNbSRGy4/giphy.gif';
